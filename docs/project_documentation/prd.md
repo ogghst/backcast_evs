@@ -118,11 +118,7 @@ The system shall implement a comprehensive branching and versioning architecture
 
 All entities in the system shall support versioning through a unified mechanism based on a **Composite Primary Key** architecture:
 
-- **Logical Identifier**: The `id` (e.g., `project_id`, `wbe_id`) represents the logical entity and remains constant across all versions and branches.
-- **Physical Identity**: The database Primary Key is composed of `(id, branch)`. This ensures that an entity can exist independently in multiple branches.
-- **Version History**: Each entity version is tracked in a corresponding `_version` table, keyed by `(id, branch, version)`.
-
-When an entity is modified, the system closes the current version (sets `valid_to`) and creates a new version record. This provides an immutable audit trail within the specific branch context.
+When an entity is modified, the system closes the current version and creates a new version record. This provides an immutable audit trail within the specific branch context.
 
 #### 8.4.2 Branch-Enabled Entities
 
@@ -153,9 +149,9 @@ The system shall utilize the Composite Primary Key `(id, branch)` to natively en
 #### 8.4.5 Branch Isolation and Data Copying
 
 The system implements a "Full Copy" isolation strategy:
-- **Initialization**: Upon branch creation, all relevant active entities are copied from 'main' to the new branch with `version=1` in the new context.
+- **Initialization**: Upon branch creation, all relevant active entities are copied from 'main' to the new branch with a new version in the new context.
 - **Modifications**: All updates, deletions, and creations within a branch affect only that branch's data lineage.
-- **Independence**: The `project_id` (and `wbe_id`) remains constant across branches (Logical ID), but the database row is distinct (Physical separation via `branch` PK).
+- **Independence**: The entity ID remains constant across branches (Logical ID), but the database row is distinct 
 
 #### 8.4.6 Branch Comparison
 
@@ -265,7 +261,7 @@ The system shall support the creation of cost and schedule baselines at signific
 
 Each baseline creation event must capture the baseline date, event description, event classification (milestone type), responsible department or function, and a snapshot of all current budget, cost, revenue, earned value, percent complete, and forecast data for all WBEs and cost elements.
 
-Baseline metadata (including owning department, `is_pmb` flag, cancellation status, and milestone classification) shall be stored directly on the **Baseline Log** record, which serves as the single source of truth for baseline identity. Detailed financial snapshots, including the latest physical percent complete and earned value for each cost element, remain in **Baseline Cost Element** records referencing the associated `baseline_id`.
+Baseline metadata (including owning department, cancellation status, and milestone classification) shall be stored directly on the **Baseline Log** record, which serves as the single source of truth for baseline identity. Detailed financial snapshots, including the latest physical percent complete and earned value for each cost element, remain in **Baseline Cost Element** records referencing the associated `baseline_id`.
 
 ### 10.2 Baseline Comparison and Variance Analysis
 

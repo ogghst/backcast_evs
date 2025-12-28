@@ -2,7 +2,7 @@
 
 ## 1. Executive Summary
 
-This document defines the technical architecture for the **Backcast EVS (Entity Versioning System)** backend—a Project Budget Management and Earned Value Management (EVM) application with Git-style versioning capabilities.
+This document defines the technical architecture for the **Backcast EVS (Entity Versioning System)** backend, a Project Budget Management and Earned Value Management (EVM) application with Git-style versioning capabilities.
 
 The system implements:
 - **Immutable Version History:** All entity changes create new version records; history is never overwritten
@@ -101,7 +101,22 @@ graph TB
 - **Repository Layer** depends only on Domain Models and Database
 - **Domain Layer** has no dependencies (pure business logic)
 
-### 3.2 Dependency Injection Pattern
+### 3.2 Authentication Pattern
+
+Authentication follows a **stateless JWT** pattern integrated with the EVCS architecture:
+
+- **Identity Separation**: User identity (Head) is separated from User profile state (Version).
+  - `User` (Head): Stores immutable identity (`id`, `email`) and security credentials (`hashed_password`).
+  - `UserVersion`: Stores mutable profile data (`full_name`, `role`, `department`) with full version history.
+- **Stateless Tokens**: `ACCESS_TOKEN` (JWT) is issued upon login and contains `sub` (user_id).
+- **Security**: 
+  - Passwords are hashed using **Argon2** (via `pwdlib`).
+  - `hashed_password` is **never** versioned in history tables to prevent security leaks in audit logs.
+- **Authorization**:
+  - `get_current_user` dependency validates the token signature.
+  - `get_current_active_user` checks the `is_active` flag on the *latest* `UserVersion`.
+
+### 3.3 Dependency Injection Pattern
 
 FastAPI's dependency injection system manages all cross-cutting concerns:
 
@@ -377,9 +392,19 @@ The EVCS is built on several foundational design patterns that work together to 
 - **Performance:** Optimized indexes on `entity_type`, `entity_id`, and `commit_id`
 - **Diff Capabilities:** Compare versions across commits and branches
 
+- **Diff Capabilities:** Compare versions across commits and branches
+
 ### 5.2 Core Architectural Patterns
 
-#### 5.2.1 Generic Type Pattern with TypeVar
+#### 5.2.1 The "Git" Data Model (DAG)
+
+We separate the concept of **Identity** from **State**.
+
+*   **Entity (Container):** Represents the stable identity (ID).
+*   **Version (Commit):** An immutable snapshot of data at a point in time. Contains a `parent_id` pointer, forming a Directed Acyclic Graph (DAG).
+*   **Branch (Pointer):** A mutable reference to a specific `Version` (HEAD).
+
+#### 5.2.2 Generic Type Pattern with TypeVar
 
 The implementation leverages Python's type system to ensure compile-time type safety through generics. The `VersionedRepository` class is parameterized on the entity type it manages, allowing MyPy to verify type correctness.
 
@@ -493,7 +518,7 @@ class ProjectRepository(VersionedRepository[Project, ProjectVersion]):
         return result.scalar_one_or_none()  # MyPy knows this is Project | None
 ```
 
-#### 5.2.2 Mixin Pattern with declared_attr
+#### 5.2.3 Mixin Pattern with declared_attr
 
 The Mixin Pattern allows adding common functionality to different classes through multiple inheritance. `VersionableEntityMixin` provides versioning capabilities to any SQLAlchemy entity.
 
@@ -643,9 +668,14 @@ class ProjectVersion(VersionSnapshotMixin, Base):
     owner_id: Mapped[UUID] = mapped_column(SQLUUID, nullable=False)
 ```
 
-#### 5.2.3 Snapshot Pattern for Temporal Data
+#### 5.2.4 Snapshot Pattern for Temporal Data (Time Propagation)
 
 The Snapshot Pattern stores the complete state of an entity at each significant point in time. Unlike a changelog that records only changes, a snapshot contains the entire state, simplifying temporal queries.
+
+To resolve the "Parent-Child" consistency problem (e.g., "What did the Project AND its Tasks look like last Tuesday?"), we use **Time Propagation**.
+
+**Mechanism:**
+We use PostgreSQL `DISTINCT ON (entity_id) ORDER BY created_at DESC` filtered by the requested timestamp. This efficiently retrieves the valid version of every child entity at that exact moment.
 
 **Benefits:**
 - Simple temporal queries (no need to replay changes)
@@ -789,7 +819,7 @@ class SnapshotManager(Generic[T]):
         return list(result.scalars().all())
 ```
 
-#### 5.2.4 Command Pattern for Operations
+#### 5.2.5 Command Pattern for Operations
 
 Every modification operation to the repository represents a command that is recorded as a commit. The commit itself contains operation metadata, effectively implementing the Command Pattern with undo capabilities.
 
@@ -994,7 +1024,7 @@ class CommandExecutor:
             await command.undo(self.session)
 ```
 
-#### 5.2.5 Immutable Object Pattern
+#### 5.2.6 Immutable Object Pattern
 
 Commits and snapshots are immutable by design. Once created, their state cannot be modified, ensuring the integrity of history. This pattern is fundamental for reliable version control systems.
 
@@ -1071,7 +1101,7 @@ async def example_immutability():
     )
 ```
 
-#### 5.2.6 Chain of Responsibility Pattern
+#### 5.2.7 Chain of Responsibility Pattern
 
 When searching for an entity's state at a specific commit, the system traverses the chain of parent commits until it finds the relevant snapshot. This implements the Chain of Responsibility pattern.
 
@@ -1199,7 +1229,7 @@ async def find_budget_threshold_version(
     )
 ```
 
-#### 5.2.7 Observer Pattern for Domain Events
+#### 5.2.8 Observer Pattern for Domain Events
 
 The Observer Pattern decouples version control operations from side effects (notifications, cache invalidation, webhooks) using an event bus.
 

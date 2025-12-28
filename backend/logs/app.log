@@ -1,0 +1,6 @@
+2025-12-28 10:49:33,499 - root - INFO - Logging initialized. Level: INFO
+2025-12-28 10:49:35,406 - root - INFO - Logging initialized. Level: INFO
+2025-12-28 10:49:50,897 - root - INFO - Logging initialized. Level: INFO
+2025-12-28 10:50:10,290 - root - INFO - Logging initialized. Level: INFO
+2025-12-28 10:50:10,290 - test_logger - INFO - This is a test INFO log message.
+2025-12-28 10:50:10,290 - test_logger - WARNING - This is a test WARNING log message.
