@@ -94,7 +94,7 @@ async def db_session(db_engine: Any) -> AsyncGenerator[AsyncSession, None]:
 async def setup_db(db_engine: Any) -> AsyncGenerator[None, None]:
     """Create and drop tables for each test."""
     # Import all models so they are found
-    from app.models.domain import user  # noqa: F401
+    from app.models.domain import department, user  # noqa: F401
     from app.models.domain.base import Base
 
     async with db_engine.begin() as conn:
