@@ -1,10 +1,14 @@
-import pytest
-from uuid import uuid4
-from datetime import datetime, timezone
-from app.models.schemas.user import UserPublic
+from datetime import UTC, datetime
+
 # We will mock the User entity since we can't easily instantiate the full SqlAlchemy model with versions without DB
 # Or we can use a simple class that mimics the structure if we want to avoid complex Mocks
 from unittest.mock import MagicMock
+from uuid import uuid4
+
+import pytest
+
+from app.models.schemas.user import UserPublic
+
 
 class TestUserPublicSchema:
     def test_from_entity_creates_valid_schema(self):
@@ -15,7 +19,7 @@ class TestUserPublicSchema:
         department = "Engineering"
         role = "admin"
         is_active = True
-        valid_from = datetime.now(timezone.utc)
+        valid_from = datetime.now(UTC)
 
         # Mock User and UserVersion
         mock_version = MagicMock()

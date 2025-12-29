@@ -44,3 +44,6 @@ Thumbs.db
 # Project specific
 uv.lock
 old/
+*.log
+coverage.xml
+.coverage
