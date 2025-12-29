@@ -119,7 +119,9 @@ async def test_delete_department(async_client: AsyncClient, db_session: Any) -> 
 
 
 @pytest.mark.asyncio
-async def test_create_duplicate_code(async_client: AsyncClient, db_session: Any) -> None:
+async def test_create_duplicate_code(
+    async_client: AsyncClient, db_session: Any
+) -> None:
     admin, admin_headers = await create_user_and_token(
         db_session, "admin_dup@test.com", "admin"
     )

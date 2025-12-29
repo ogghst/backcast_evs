@@ -15,7 +15,12 @@ class DepartmentBase(BaseModel):
 
 
 class DepartmentCreate(DepartmentBase):
-    code: str = Field(..., max_length=50, pattern="^[A-Z0-9_-]+$", description="Unique department code (immutable)")
+    code: str = Field(
+        ...,
+        max_length=50,
+        pattern="^[A-Z0-9_-]+$",
+        description="Unique department code (immutable)",
+    )
 
 
 class DepartmentUpdate(BaseModel):
@@ -42,5 +47,5 @@ class DepartmentPublic(DepartmentBase):
             name=latest.name,
             manager_id=latest.manager_id,
             is_active=latest.is_active,
-            created_at=latest.valid_from
+            created_at=latest.valid_from,
         )

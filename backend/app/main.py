@@ -45,5 +45,7 @@ async def root() -> dict[str, str]:
 app.include_router(auth.router, prefix=settings.API_V1_STR)
 app.include_router(users.router, prefix=f"{settings.API_V1_STR}/users", tags=["Users"])
 app.include_router(
-    departments.router, prefix=f"{settings.API_V1_STR}/departments", tags=["Departments"]
+    departments.router,
+    prefix=f"{settings.API_V1_STR}/departments",
+    tags=["Departments"],
 )

@@ -64,7 +64,6 @@ async def create_department(
             detail=str(e),
         ) from e
 
-
     return DepartmentPublic.from_entity(dept)
 
 
@@ -104,7 +103,6 @@ async def update_department(
     dept = await service.get_department(department_id)
     if not dept:
         raise HTTPException(status_code=404, detail="Department not found")
-
 
     return DepartmentPublic.from_entity(dept)
 

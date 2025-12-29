@@ -1,6 +1,7 @@
 """
 Department domain models.
 """
+
 from typing import TYPE_CHECKING
 from uuid import UUID
 
@@ -23,9 +24,12 @@ class Department(BaseHeadMixin, Base):
     - id: UUID (from BaseHeadMixin)
     - code: Unique department code (e.g. "ENG", "HR")
     """
+
     __tablename__ = "department"
 
-    code: Mapped[str] = mapped_column(String(50), unique=True, index=True, nullable=False)
+    code: Mapped[str] = mapped_column(
+        String(50), unique=True, index=True, nullable=False
+    )
 
     # Relationships
     versions: Mapped[list["DepartmentVersion"]] = relationship(
@@ -49,6 +53,7 @@ class DepartmentVersion(BaseVersionMixin, Base):
     - manager_id: Optional link to User
     - is_active: Status
     """
+
     __tablename__ = "department_version"
 
     head_id: Mapped[UUID] = mapped_column(
@@ -59,7 +64,9 @@ class DepartmentVersion(BaseVersionMixin, Base):
     )
 
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    manager_id: Mapped[UUID | None] = mapped_column(SQLUUID, ForeignKey("user.id"), nullable=True)
+    manager_id: Mapped[UUID | None] = mapped_column(
+        SQLUUID, ForeignKey("user.id"), nullable=True
+    )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     department: Mapped["Department"] = relationship(

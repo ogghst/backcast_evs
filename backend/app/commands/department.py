@@ -101,7 +101,9 @@ class UpdateDepartmentCommand(VersionCommand[DepartmentVersion]):
         current_version = result.scalar_one_or_none()
 
         if not current_version:
-            raise ValueError(f"No active version found for department {self.department_id}")
+            raise ValueError(
+                f"No active version found for department {self.department_id}"
+            )
 
         self.previous_version_pk = (current_version.head_id, current_version.valid_from)
 
@@ -186,7 +188,9 @@ class DeleteDepartmentCommand(VersionCommand[DepartmentVersion]):
         current_version = result.scalar_one_or_none()
 
         if not current_version:
-            raise ValueError(f"No active version found for department {self.department_id}")
+            raise ValueError(
+                f"No active version found for department {self.department_id}"
+            )
 
         self.previous_version_pk = (current_version.head_id, current_version.valid_from)
 
