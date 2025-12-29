@@ -2,7 +2,7 @@
 description: perform next task
 ---
 
-analyze all documents in docs\project_documentation folder, analyze work done in project_track_record.md, and define the next task to implement. folow guidelines in docs/dev folder. ask to user confirmation over the findings.
+analyze all documents in docs\project_documentation folder, analyze work done in project_track_record.md, and define the next task to implement. follow guidelines in docs/dev folder. ask to user confirmation over the findings.
 
 perform on each task the full PDCA cycle using prompts in .agent/rules:
 - plan.md - analysis and plan phase
@@ -11,4 +11,4 @@ perform on each task the full PDCA cycle using prompts in .agent/rules:
 - act.md - retrospective, documentation, improvement phase
 
 use @mcp:context7 to review libraries best practices.
-use @mcp:postgres to check database status and data.
+use @mcp:postgres_evs to check database status and data.

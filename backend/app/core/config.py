@@ -1,6 +1,3 @@
-import logging
-import sys
-
 from pydantic import PostgresDsn, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -34,4 +31,3 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
-

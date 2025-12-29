@@ -204,6 +204,61 @@ This document serves as the single source of truth for all work completed on the
 
 ---
 
+### Architecture Refinement (User Entity) - [CLOSED]
+*   **Status**: COMPLETED
+*   **End Date**: 2025-12-29
+*   **Key Deliverables**:
+    *   Command Pattern (`CreateUserCommand`, `UpdateUserCommand`)
+    *   Snapshot Pattern for User Updates
+    *   Timezone Standardization (`TIMESTAMPTZ`, `UTC`)
+    *   Generic Serialization (`to_dict` via inspection)
+*   **Quality Metrics**:
+    *   Tests Passed: 22/22 (100%)
+    *   Code Coverage: 82.5%
+    *   Mypy: PASSED (Strict)
+    *   Ruff: PASSED
+Architecture Compliance
+
+#### Deliverables
+
+**Pattern Implementation**
+- ✅ Implemented **Generic Repository Pattern** (`app/repositories/base.py`)
+  - Created `BaseRepository` (non-branching) & `VersionedRepository` (branching)
+  - Refactored `UserRepository` to inherit from `BaseRepository`
+- ✅ Implemented **Mixin Pattern** (`app/models/mixins/versionable.py`)
+  - Created mixin hierarchy: `BaseHeadMixin`/`BaseVersionMixin` (User) vs `VersionableHeadMixin`/`VersionSnapshotMixin` (Project)
+  - Implemented `VersionableEntity` and `VersionSnapshot` protocols
+- ✅ Implemented **Service Layer Pattern** (`app/services/auth.py`)
+  - Standardized dependency injection: Session passed to Service `__init__`, Repository instantiated with Session
+- ✅ Implemented **Command Pattern** (`app/core/versioning/commands.py`, `app/commands/user.py`)
+  - Created `CommandMetadata`, generic `VersionCommand` base class
+  - Implemented `CreateUserCommand` and `UpdateUserCommand` with **Undo** capabilities
+  - Refactored `AuthService` to use Commands for all state-changing operations
+- ✅ Implemented **Snapshot Pattern**
+  - Implemented `UpdateUserCommand` logic to close old version and create new immutable snapshot
+  - Verified snapshot integrity via unit tests
+
+**Code Quality**
+- ✅ Fixed `User` entity to strictly follow non-branching architectural path
+- ✅ Resolved datetime timezone issues (standardized on `datetime.now(timezone.utc)` / `DateTime(timezone=True)`)
+- ✅ Addressed serialization debt (implemented `to_dict` logic)
+- ✅ **Result:** 22/22 tests passing (including new command unit tests), clean of warnings, fully compliant with `docs/dev/backend_architecture.md`
+
+#### Files Created/Modified
+- ✅ Created `app/models/mixins/versionable.py`
+- ✅ Created `app/models/mixins/__init__.py`
+- ✅ Created `app/repositories/base.py`
+- ✅ Created `app/core/versioning/commands.py`
+- ✅ Created `app/commands/user.py`
+- ✅ Created `tests/unit/test_commands.py`
+- ✅ Refactored `app/models/domain/user.py`
+- ✅ Refactored `app/repositories/user.py`
+- ✅ Refactored `app/services/auth.py`
+- ✅ Refactored `app/api/dependencies/auth.py`
+- ✅ Refactored `app/api/routes/auth.py`
+
+---
+
 ## Summary Statistics
 
 | Metric | Value |
@@ -218,4 +273,4 @@ This document serves as the single source of truth for all work completed on the
 
 ---
 
-**Last Updated:** 2025-12-28 09:10
+**Last Updated:** 2025-12-29 01:25

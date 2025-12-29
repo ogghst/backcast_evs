@@ -23,9 +23,9 @@ async def register(
     """
     Register a new user.
     """
-    auth_service = AuthService()
+    auth_service = AuthService(session)
     try:
-        user = await auth_service.register_user(session, user_in)
+        user = await auth_service.register_user(user_in)
         # We need to construct UserPublic from User + UserVersion
         # Since our User model doesn't flattened fields directly mapping to UserPublic
         # (UserPublic has full_name, is_active etc, which are on UserVersion)
@@ -59,9 +59,9 @@ async def login(
     """
     OAuth2 compatible token login, get an access token for future requests.
     """
-    auth_service = AuthService()
+    auth_service = AuthService(session)
     user = await auth_service.authenticate_user(
-        session, UserLogin(email=form_data.username, password=form_data.password)
+        UserLogin(email=form_data.username, password=form_data.password)
     )
     if not user:
         raise HTTPException(

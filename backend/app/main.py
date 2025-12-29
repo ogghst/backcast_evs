@@ -14,7 +14,7 @@ from app.core.logging import setup_logging
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Configure logging on startup
     setup_logging()
-    
+
     # Startup: could check db connection here
     yield
     # Shutdown: clean up resources

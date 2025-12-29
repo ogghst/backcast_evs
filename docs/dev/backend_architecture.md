@@ -332,15 +332,15 @@ class ProjectVersion(Base):
     version: Mapped[int] = mapped_column(nullable=False)
     
     # Temporal validity
-    valid_from: Mapped[datetime] = mapped_column(nullable=False)
-    valid_to: Mapped[datetime | None] = mapped_column(nullable=True)
+    valid_from: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    valid_to: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     
     # Business data (immutable)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     budget: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=True)
     
     # Audit fields
-    created_at: Mapped[datetime] = mapped_column(nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     created_by: Mapped[UUID] = mapped_column(UUID, nullable=False)
 ```
 
@@ -520,141 +520,120 @@ class ProjectRepository(VersionedRepository[Project, ProjectVersion]):
 
 #### 5.2.3 Mixin Pattern with declared_attr
 
-The Mixin Pattern allows adding common functionality to different classes through multiple inheritance. `VersionableEntityMixin` provides versioning capabilities to any SQLAlchemy entity.
+The Mixin Pattern allows adding common functionality to different classes through multiple inheritance. We implement a **Mixin Hierarchy** to separate basic versioning (temporal validity) from advanced branching capabilities.
 
-Using `@declared_attr` from SQLAlchemy allows defining columns that are replicated in every class inheriting the mixin.
+**Hierarchy:**
+1.  **Base Mixins (`BaseHeadMixin`, `BaseVersionMixin`)**: Provide core versioning (Identity, Temporal Validity, Auditing). Used for non-branching entities like `User`.
+2.  **Branch-Aware Mixins (`VersionableHeadMixin`, `VersionSnapshotMixin`)**: Extend the base mixins to add `branch`, `parent_version_id`, and composite primary keys including branch. Used for `Project`, `WBE`, etc.
 
-**Benefits:**
-- DRY principle: Define versioning columns once
-- Consistent structure across all versioned entities
-- Easy to add new versioned entities
+**Features:**
+- **Generic Serialization**: All mixins implement `to_dict()` using SQLAlchemy inspection to automatically serializes all columns.
+- **Timezone Awareness**: All timestamps use `DateTime(timezone=True)` (TIMESTAMPTZ) and `datetime.now(timezone.utc)`.
 
 **Implementation:**
 
 ```python
 # app/models/mixins/versionable.py
-from sqlalchemy import String, UUID as SQLUUID, Integer, DateTime
-from sqlalchemy.orm import Mapped, mapped_column, declared_attr
-from uuid import UUID, uuid4
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
+from uuid import UUID, uuid4
 
-class VersionableHeadMixin:
-    """
-    Mixin for head tables (stable identity).
-    Provides composite primary key (id, branch) and version tracking.
-    """
+from sqlalchemy import String, DateTime, inspect
+from sqlalchemy.dialects.postgresql import UUID as SQLUUID
+from sqlalchemy.orm import Mapped, declared_attr, mapped_column
+
+# ============================================================================
+# Base Mixins (Non-Branching)
+# ============================================================================
+
+class BaseHeadMixin:
+    """Base mixin for head tables (stable identity)."""
     
     @declared_attr
     def id(cls) -> Mapped[UUID]:
-        """Logical entity ID (stable across branches)."""
+        """Logical entity ID (stable identity)."""
         return mapped_column(SQLUUID, primary_key=True, default=uuid4)
+    
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize entity to dictionary using SQLAlchemy inspection."""
+        from sqlalchemy.orm import Mapper
+        data = {}
+        mapper = inspect(self.__class__)
+        if isinstance(mapper, Mapper):
+            for column in mapper.column_attrs:
+                value = getattr(self, column.key)
+                if isinstance(value, UUID):
+                    data[column.key] = str(value)
+                elif isinstance(value, datetime):
+                    data[column.key] = value.isoformat()
+                else:
+                    data[column.key] = value
+        return data
+
+class BaseVersionMixin:
+    """Base mixin for version tables (immutable snapshots)."""
+    
+    @declared_attr
+    def head_id(cls) -> Mapped[UUID]:
+        return mapped_column(SQLUUID, primary_key=True, index=True)
+    
+    @declared_attr
+    def valid_from(cls) -> Mapped[datetime]:
+        return mapped_column(DateTime(timezone=True), primary_key=True, index=True, default=lambda: datetime.now(timezone.utc))
+    
+    @declared_attr
+    def valid_to(cls) -> Mapped[datetime | None]:
+        return mapped_column(DateTime(timezone=True), nullable=True, index=True)
+    
+    @declared_attr
+    def created_by_id(cls) -> Mapped[UUID | None]:
+        return mapped_column(SQLUUID, nullable=True)
+    
+    # Uses generic to_dict() logic similar to BaseHeadMixin
+
+# ============================================================================
+# Branch-Aware Mixins (Extends Base Mixins)
+# ============================================================================
+
+class VersionableHeadMixin(BaseHeadMixin):
+    """Mixin for branch-aware head tables."""
     
     @declared_attr
     def branch(cls) -> Mapped[str]:
-        """Branch name (part of composite PK)."""
         return mapped_column(String(100), primary_key=True, default="main")
     
     @declared_attr
     def current_version_id(cls) -> Mapped[UUID | None]:
-        """Pointer to current version (mutable)."""
         return mapped_column(SQLUUID, nullable=True)
     
     @declared_attr
     def status(cls) -> Mapped[str]:
-        """Entity status (active, deleted, merged)."""
         return mapped_column(String(20), default="active", index=True)
-    
-    def to_dict(self) -> dict[str, Any]:
-        """Serialize entity to dictionary."""
-        return {
-            "id": str(self.id),
-            "branch": self.branch,
-            "current_version_id": str(self.current_version_id) if self.current_version_id else None,
-            "status": self.status,
-        }
-    
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "VersionableHeadMixin":
-        """Deserialize entity from dictionary."""
-        return cls(
-            id=UUID(data["id"]),
-            branch=data["branch"],
-            current_version_id=UUID(data["current_version_id"]) if data.get("current_version_id") else None,
-            status=data.get("status", "active"),
-        )
 
-class VersionSnapshotMixin:
-    """
-    Mixin for version tables (immutable snapshots).
-    Provides version chain, temporal validity, and audit fields.
-    """
-    
-    @declared_attr
-    def id(cls) -> Mapped[UUID]:
-        """Unique version ID."""
-        return mapped_column(SQLUUID, primary_key=True, default=uuid4)
-    
-    @declared_attr
-    def head_id(cls) -> Mapped[UUID]:
-        """Reference to logical entity ID."""
-        return mapped_column(SQLUUID, nullable=False, index=True)
+class VersionSnapshotMixin(BaseVersionMixin):
+    """Mixin for branch-aware version tables."""
     
     @declared_attr
     def branch(cls) -> Mapped[str]:
-        """Branch this version belongs to."""
-        return mapped_column(String(100), nullable=False, index=True)
+        return mapped_column(String(100), primary_key=True, index=True)
     
     @declared_attr
     def parent_version_id(cls) -> Mapped[UUID | None]:
-        """Previous version in the chain (DAG structure)."""
         return mapped_column(SQLUUID, nullable=True, index=True)
     
     @declared_attr
     def version(cls) -> Mapped[int]:
-        """Sequential version number within branch."""
-        return mapped_column(Integer, nullable=False)
-    
-    @declared_attr
-    def valid_from(cls) -> Mapped[datetime]:
-        """Start of temporal validity."""
-        return mapped_column(DateTime, nullable=False, index=True)
-    
-    @declared_attr
-    def valid_to(cls) -> Mapped[datetime | None]:
-        """End of temporal validity (NULL = current)."""
-        return mapped_column(DateTime, nullable=True, index=True)
-    
-    @declared_attr
-    def created_at(cls) -> Mapped[datetime]:
-        """Immutable creation timestamp."""
-        return mapped_column(DateTime, nullable=False, default=datetime.utcnow)
-    
-    @declared_attr
-    def created_by(cls) -> Mapped[UUID]:
-        """User who created this version."""
-        return mapped_column(SQLUUID, nullable=False)
-    
-    def to_dict(self) -> dict[str, Any]:
-        """Serialize version to dictionary."""
-        return {
-            "id": str(self.id),
-            "head_id": str(self.head_id),
-            "branch": self.branch,
-            "parent_version_id": str(self.parent_version_id) if self.parent_version_id else None,
-            "version": self.version,
-            "valid_from": self.valid_from.isoformat(),
-            "valid_to": self.valid_to.isoformat() if self.valid_to else None,
-            "created_at": self.created_at.isoformat(),
-            "created_by": str(self.created_by),
-        }
+        return mapped_column(nullable=False)
+```
 
-# Usage in domain models
+**Usage in domain models:**
+
+```python
+# app/models/domain/project.py
 class Project(VersionableHeadMixin, Base):
     """Project head table with versioning capabilities."""
     __tablename__ = "projects"
     
-    # Business-specific fields
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     owner_id: Mapped[UUID] = mapped_column(SQLUUID, nullable=False)
 
@@ -662,7 +641,6 @@ class ProjectVersion(VersionSnapshotMixin, Base):
     """Project version table with immutable snapshots."""
     __tablename__ = "project_versions"
     
-    # Business-specific fields (immutable copies)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     budget: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=True)
     owner_id: Mapped[UUID] = mapped_column(SQLUUID, nullable=False)
@@ -739,7 +717,7 @@ class SnapshotManager(Generic[T]):
             stmt = (
                 update(self.version_model)
                 .where(self.version_model.id == parent_version_id)
-                .values(valid_to=datetime.utcnow())
+                .values(valid_to=datetime.now(timezone.utc))
             )
             await self.session.execute(stmt)
         
@@ -749,7 +727,7 @@ class SnapshotManager(Generic[T]):
             branch=branch,
             parent_version_id=parent_version_id,
             version=next_version,
-            valid_from=datetime.utcnow(),
+            valid_from=datetime.now(timezone.utc),
             valid_to=None,  # Open-ended validity
             created_by=user_id,
             **data,  # Complete entity state
@@ -1380,7 +1358,7 @@ class VersionedRepository(Generic[HeadT, VersionT]):
         # Publish event
         event = EntityCreatedEvent(
             event_type="entity_created",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
             user_id=user_id,
             entity_id=head.id,
             entity_type=self.head_model.__tablename__,
@@ -1609,7 +1587,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
     """Create JWT access token."""
     to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=15))
+    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=15))
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
 

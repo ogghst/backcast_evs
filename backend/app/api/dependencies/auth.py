@@ -37,7 +37,7 @@ async def get_current_user(
     if token_data.sub is None:
         raise credentials_exception
 
-    user_repo = UserRepository()
+    user_repo = UserRepository(session)
     # The sub claim contains the user ID
     try:
         user_id = token_data.sub
@@ -46,7 +46,7 @@ async def get_current_user(
         from uuid import UUID
 
         user_uuid = UUID(user_id)
-        user = await user_repo.get_by_id(session, user_uuid)
+        user = await user_repo.get_by_id(user_uuid)
     except (ValueError, TypeError):
         raise credentials_exception from None
 
