@@ -21,7 +21,7 @@ def test_user_public_from_entity() -> None:
         department="Engineering",
         is_active=True,
         valid_from=datetime.now(UTC),
-        created_by_id=user_id
+        created_by_id=user_id,
     )
     # Link manually for unit test (without DB session, SA relationships might not auto-populate unless we mock or set list)
     user.versions = [version]
@@ -45,7 +45,7 @@ def test_user_register_validation() -> None:
         email="valid@test.com",
         password="securepassword",
         full_name="Valid Name",
-        role="viewer"
+        role="viewer",
     )
     assert valid_data.email == "valid@test.com"
 
@@ -55,14 +55,11 @@ def test_user_register_validation() -> None:
             email="not-an-email",
             password="securepassword",
             full_name="Name",
-            role="viewer"
+            role="viewer",
         )
 
     # Short password
     with pytest.raises(ValidationError):
         UserRegister(
-            email="valid@test.com",
-            password="short",
-            full_name="Name",
-            role="viewer"
+            email="valid@test.com", password="short", full_name="Name", role="viewer"
         )

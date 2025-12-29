@@ -164,7 +164,9 @@ async def test_delete_user_command(db_session: Any) -> None:
     user_id = uuid4()
 
     # Create Head
-    user = User(id=user_id, email=f"delete_test_{user_id}@example.com", hashed_password="pw")
+    user = User(
+        id=user_id, email=f"delete_test_{user_id}@example.com", hashed_password="pw"
+    )
     db_session.add(user)
 
     # Create Active Version
@@ -175,7 +177,7 @@ async def test_delete_user_command(db_session: Any) -> None:
         role="viewer",
         is_active=True,
         valid_from=now,
-        created_by_id=user_id
+        created_by_id=user_id,
     )
     db_session.add(version)
     await db_session.commit()
@@ -186,7 +188,7 @@ async def test_delete_user_command(db_session: Any) -> None:
         command_type="DELETE",
         user_id=user_id,
         timestamp=delete_time,
-        description="Soft Delete User"
+        description="Soft Delete User",
     )
 
     cmd = DeleteUserCommand(metadata=metadata, user_id=user_id)
@@ -198,18 +200,16 @@ async def test_delete_user_command(db_session: Any) -> None:
 
     # Check old version closed
     stmt = select(UserVersion).where(
-        UserVersion.head_id == user_id,
-        UserVersion.valid_to == delete_time
+        UserVersion.head_id == user_id, UserVersion.valid_to == delete_time
     )
     closed_version = (await db_session.execute(stmt)).scalar_one()
     assert closed_version.is_active is True
 
     # Check new version open and inactive
     stmt = select(UserVersion).where(
-        UserVersion.head_id == user_id,
-        UserVersion.valid_to.is_(None)
+        UserVersion.head_id == user_id, UserVersion.valid_to.is_(None)
     )
     new_version = (await db_session.execute(stmt)).scalar_one()
     assert new_version.is_active is False
     assert new_version.valid_from == delete_time
-    assert new_version.full_name == "To Be Deleted" # Should preserve other data
+    assert new_version.full_name == "To Be Deleted"  # Should preserve other data

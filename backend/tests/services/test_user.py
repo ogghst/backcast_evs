@@ -12,6 +12,7 @@ from app.services.user import UserService
 # But for now, let's use unit tests with mocks or real DB session if accessible.
 # Since we have db_session fixture, let's use real DB for simplicity and confidence.
 
+
 @pytest.mark.asyncio
 async def test_user_service_crud(db_session: Any) -> None:
     service = UserService(db_session)
@@ -21,10 +22,10 @@ async def test_user_service_crud(db_session: Any) -> None:
 
     user_data = UserRegister(
         email=f"service_test_{admin_id}@example.com",
-        password="securepassword123", # Fixed: Meets min length requirement
+        password="securepassword123",  # Fixed: Meets min length requirement
         full_name="Original Name",
         role="viewer",
-        department="HR"
+        department="HR",
     )
 
     user = await service.create_user(user_data, actor_id=admin_id)
@@ -64,9 +65,9 @@ async def test_user_service_crud(db_session: Any) -> None:
     # Verify soft delete
     # Explicit check
     from sqlalchemy import select
+
     stmt = select(UserVersion).where(
-        UserVersion.head_id == user_id,
-        UserVersion.valid_to.is_(None)
+        UserVersion.head_id == user_id, UserVersion.valid_to.is_(None)
     )
     current_version = (await db_session.execute(stmt)).scalar_one()
     assert current_version.is_active is False

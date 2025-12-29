@@ -7,7 +7,9 @@ from app.core.config import settings
 
 
 @pytest.mark.asyncio
-async def test_register_endpoint_success(async_client: AsyncClient, db_session: Any) -> None:
+async def test_register_endpoint_success(
+    async_client: AsyncClient, db_session: Any
+) -> None:
     # db_session fixture used to ensure DB is clean/ready
     payload = {
         "email": "api_reg@example.com",
@@ -47,7 +49,9 @@ async def test_register_endpoint_duplicate_email(
 
 
 @pytest.mark.asyncio
-async def test_login_endpoint_success(async_client: AsyncClient, db_session: Any) -> None:
+async def test_login_endpoint_success(
+    async_client: AsyncClient, db_session: Any
+) -> None:
     # Register first
     payload = {
         "email": "login_api@example.com",

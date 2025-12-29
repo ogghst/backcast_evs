@@ -57,11 +57,11 @@ class UserService:
             # Let's get the current active version to return.
             user = await self.user_repo.get_by_id(user_id)
             if not user or not user.versions:
-                 raise ValueError("User or version not found")
+                raise ValueError("User or version not found")
 
             # Since we modified the session (password), we should flush
             await self.session.flush()
-            return user.versions[0] # Return generic latest version
+            return user.versions[0]  # Return generic latest version
 
         metadata = CommandMetadata(
             command_type="UPDATE_USER",
@@ -70,9 +70,7 @@ class UserService:
             description="User Update",
         )
 
-        command = UpdateUserCommand(
-            metadata=metadata, user_id=user_id, changes=changes
-        )
+        command = UpdateUserCommand(metadata=metadata, user_id=user_id, changes=changes)
         return await command.execute(self.session)
 
     async def delete_user(self, user_id: UUID, actor_id: UUID) -> None:
@@ -97,7 +95,7 @@ class UserService:
         if existing_user:
             raise ValueError("Email already registered")
 
-        new_user_id = UUID(int=uuid4().int) # Ensure standard UUID generation
+        new_user_id = UUID(int=uuid4().int)  # Ensure standard UUID generation
 
         metadata = CommandMetadata(
             command_type="CREATE_USER",

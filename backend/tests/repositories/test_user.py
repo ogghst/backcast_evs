@@ -27,7 +27,7 @@ async def test_user_repository_crud(db_session: Any) -> None:
             is_active=True,
             valid_from=datetime.now(UTC),
             created_by_id=user_id,
-            department="IT" if i % 2 == 0 else "HR"
+            department="IT" if i % 2 == 0 else "HR",
         )
         db_session.add(version)
         user_ids.append(user_id)

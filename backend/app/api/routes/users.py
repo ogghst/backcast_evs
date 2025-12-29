@@ -32,7 +32,7 @@ async def read_users(
     # Ideally, we should have a dependency helper for this or helpers on User object
     latest_version = current_user.versions[0]
     if latest_version.role != "admin":
-         raise HTTPException(
+        raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="The user doesn't have enough privileges",
         )
@@ -66,7 +66,7 @@ async def create_user(
     """
     latest_version = current_user.versions[0]
     if latest_version.role != "admin":
-         raise HTTPException(
+        raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="The user doesn't have enough privileges",
         )
@@ -145,7 +145,7 @@ async def update_user(
     # We should probably get the full user again to ensure structure.
     user = await service.get_user(user_id)
     if not user:
-         raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="User not found")
 
     # Refresh versions to ensure we see the update
     await service.session.refresh(user, attribute_names=["versions"])
