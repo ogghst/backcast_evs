@@ -11,6 +11,9 @@ description: plan phase, instructions for analysis and plan phase
 
 You are tasked with implementing a feature in a **large, established codebase**. Before any code is written, execute the PLAN phase comprehensively.
 
+**Step 0: Documentation Context Analysis
+Analyze documentation in docs/ folder for product requirement alignment, project plan status, architectural decisions.
+
 **Step 1: Codebase Context Analysis**
 First, analyze the relevant areas of the existing codebase to understand:
 - Current architectural patterns and conventions in use

@@ -34,16 +34,7 @@ async def register(
         # has these attributes/properties proxying to the latest version.
 
         # Manually mapping for safety given the complexity of EVCS:
-        latest_version = user.versions[0]
-        return UserPublic(
-            id=user.id,
-            email=user.email,
-            full_name=latest_version.full_name,
-            department=latest_version.department,
-            role=latest_version.role,
-            is_active=latest_version.is_active,
-            created_at=latest_version.valid_from,
-        )
+        return UserPublic.from_entity(user)
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -82,13 +73,4 @@ async def read_users_me(
     Get current user.
     """
     # Map to schema
-    latest_version = current_user.versions[0]
-    return UserPublic(
-        id=current_user.id,
-        email=current_user.email,
-        full_name=latest_version.full_name,
-        department=latest_version.department,
-        role=latest_version.role,
-        is_active=latest_version.is_active,
-        created_at=latest_version.valid_from,
-    )
+    return UserPublic.from_entity(current_user)

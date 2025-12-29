@@ -82,3 +82,8 @@ All state-changing operations (Create, Update, Delete, Merge) MUST be implemente
 ### 8.4. Serialization
 - All domain models (Head and Version) must implement a `to_dict()` method.
 - Version models from `BaseVersionMixin` must override `to_dict()` to include their specific entity attributes while calling `super().to_dict()` for metadata.
+
+### 8.5. Schema Transformations
+- **Complex Mappings**: When mapping complex domain entities (especially EVCS entities requiring data from both Head and Version) to Pydantic schemas, do NOT perform manual mapping in route handlers.
+- **Factory Methods**: Implement a static factory method `from_entity(cls, entity: Entity) -> Schema` on the Pydantic schema class.
+- **Example**: `UserPublic.from_entity(user)` instead of manually constructing `UserPublic(...)` in the route.

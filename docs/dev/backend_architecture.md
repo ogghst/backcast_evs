@@ -116,7 +116,14 @@ Authentication follows a **stateless JWT** pattern integrated with the EVCS arch
   - `get_current_user` dependency validates the token signature.
   - `get_current_active_user` checks the `is_active` flag on the *latest* `UserVersion`.
 
-### 3.3 Dependency Injection Pattern
+### 3.3 Schema Mapping Pattern
+
+To maintain separation of concerns and reduce duplication:
+- **Factory Methods**: Complex transformations from Domain Models -> Pydantic Schemas reside in the Schema layer.
+- **Pattern**: Use `SchemaClass.from_entity(domain_entity)` factory methods (e.g., `UserPublic.from_entity(user)`) to encapsulate logic for combining Head and Version data.
+- **Prohibition**: Do not perform manual field-by-field mapping in API route handlers.
+
+### 3.4 Dependency Injection Pattern
 
 FastAPI's dependency injection system manages all cross-cutting concerns:
 

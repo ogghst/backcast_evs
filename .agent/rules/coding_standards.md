@@ -6,7 +6,7 @@ trigger: manual
 
 This document outlines the coding standards and best practices for the Backcast EVS backend. Adherence to these standards ensures code quality, maintainability, and consistency across the codebase.
 
-Backend project resides in backend/ folder. All commands are relatives to that folder.
+Backend project resides in `backend/` folder. All commands are relative to that folder.
 
 ## 1. Type Safety
 
@@ -53,7 +53,7 @@ We use **Ruff** for both formatting and linting. It is significantly faster than
     *   `WARNING`: Indication that something unexpected happened, but the software is still working as expected.
     *   `ERROR`: Due to a more serious problem, the software has not been able to perform some function.
 *   **Output**: Logs must be written to both console (stdout) and the `logs/` directory.
-*   **Format**: Use the standard format defined in [app/core/logging.py]
+*   **Format**: Use the standard format defined in `app/core/logging.py`.
 
 ## 7. Project Structure
 
@@ -63,3 +63,26 @@ Adhere to the Clean Architecture layers:
 3.  **Services**: `app/services/` (Business logic)
 4.  **Repositories**: `app/repositories/` (Data access)
 5.  **Core**: `app/core/` (Configuration, Security)
+
+## 8. Versioning Patterns (EVCS Specific)
+
+### 8.1. Snapshot Pattern
+Every update to a versionable entity MUST create a new record in the version table.
+- Use `valid_from` and `valid_to` to manage temporal validity.
+- The current version always has `valid_to = NULL`.
+- When superseding a version, set `valid_to` to the timestamp of the new version's `valid_from`.
+
+### 8.2. Command Pattern
+All state-changing operations (Create, Update, Delete, Merge) MUST be implemented using the **Command Pattern**.
+- Base classes: `VersionCommand` in `app.core.versioning.commands`.
+- Commands must include `CommandMetadata` (timestamp, actor, description).
+- Commands must implement `undo()` where possible to support transaction-level reversals.
+
+### 8.3. Timezone Awareness
+- **Database**: Use `DateTime(timezone=True)` for all timestamp columns.
+- **Python**: Use `datetime.now(timezone.utc)`. Never use `datetime.utcnow()` as it is deprecated and produces naive objects.
+- All temporal comparisons in the EVCS logic must be performed with timezone-aware objects.
+
+### 8.4. Serialization
+- All domain models (Head and Version) must implement a `to_dict()` method.
+- Version models from `BaseVersionMixin` must override `to_dict()` to include their specific entity attributes while calling `super().to_dict()` for metadata.

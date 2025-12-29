@@ -1,7 +1,11 @@
 from datetime import datetime
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
+
+if TYPE_CHECKING:
+    from app.models.domain.user import User
 
 
 # Shared properties
@@ -36,6 +40,21 @@ class UserPublic(UserBase):
     )
 
     model_config = ConfigDict(from_attributes=True)
+
+    @classmethod
+    def from_entity(cls, user: "User") -> "UserPublic":
+        if not user.versions:
+            raise ValueError("User has no versions")
+        latest_version = user.versions[0]
+        return cls(
+            id=user.id,
+            email=user.email,
+            full_name=latest_version.full_name,
+            department=latest_version.department,
+            role=latest_version.role,
+            is_active=latest_version.is_active,
+            created_at=latest_version.valid_from,
+        )
 
 
 # Login schema

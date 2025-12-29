@@ -257,6 +257,19 @@ Architecture Compliance
 - ✅ Refactored `app/api/dependencies/auth.py`
 - ✅ Refactored `app/api/routes/auth.py`
 
+### UserPublic Schema Refactor - [CLOSED]
+*   **Status**: COMPLETED
+*   **End Date**: 2025-12-29
+*   **Key Deliverables**:
+    *   `UserPublic.from_entity` static factory method
+    *   Centralized mapping logic (Head + Version -> Public Schema)
+    *   Updated Coding Standards & Architecture Docs
+*   **Quality Metrics**:
+    *   Test Coverage: 89% (User Schema + Auth Routes)
+    *   Tests Passed: 8/8 (Unit + Integration)
+    *   Lint/Type Checks: Passed
+*   **Pattern Standardized**: Schema Mapping Pattern (Factory Methods)
+
 ---
 
 ## Summary Statistics
