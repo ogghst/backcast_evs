@@ -1,3 +1,7 @@
+---
+trigger: manual
+---
+
 # Testing Guidelines
 
 This document defines our strategy and patterns for maintaining high test quality and coverage.

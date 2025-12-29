@@ -1,5 +1,5 @@
 ---
-trigger: model_decision
+trigger: manual
 description: plan phase, instructions for analysis and plan phase
 ---
 

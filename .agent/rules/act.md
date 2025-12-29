@@ -1,5 +1,5 @@
 ---
-trigger: model_decision
+trigger: manual
 description: act phase, after completion of verification or check phase
 ---
 

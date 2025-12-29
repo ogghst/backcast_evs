@@ -19,27 +19,41 @@ The project is organized into several key directories:
     *   `app/models/`: SQLAlchemy ORM models and Pydantic schemas.
     *   `app/repositories/`: Data access layer implementing the versioning logic.
     *   `app/services/`: Business logic orchestrating multiple repositories.
-*   **`docs/`**: Project documentation, including architectural deep dives and sprint plans.
-    *   `docs/dev/`: Technical documentation for developers.
-    *   `docs/project_documentation/`: Project management and tracking records.
+*   **`docs/`**: Bounded-context documentation (product scope, architecture, project plan, PDCA prompts).
+    *   `docs/00-meta/`: Entry point and documentation guides.
+    *   `docs/01-product-scope/`: Business requirements and vision.
+    *   `docs/02-architecture/`: System design, contexts, cross-cutting concerns, ADRs.
+    *   `docs/03-project-plan/`: Current work, backlog, iteration history.
+    *   `docs/04-pdca-prompts/`: AI collaboration templates.
+*   **`old_docs/`**: Legacy documentation preserved for reference.
 *   **`scripts/`**: Utility scripts for database management and development tasks.
 
 ## 3. Documentation
 
-For detailed technical information and development guides, please refer to the following documents in the `docs/` folder:
+The project uses a **bounded-context documentation structure** to minimize context rot and improve maintainability.
 
-*   **[Backend Architecture Documentation](file:///home/nicola/dev/backcast_evs/docs/dev/backend_architecture.md)**: Deep dive into the EVCS implementation, patterns, and database schema.
-*   **[Development Onboarding](file:///home/nicola/dev/backcast_evs/docs/dev/onboarding.md)**: Setup instructions and coding standards.
-*   **[Product Requirements Document (PRD)](file:///home/nicola/dev/backcast_evs/docs/prd.md)**: Business requirements and functional specifications.
-*   **[Agile Implementation Plan](file:///home/nicola/dev/backcast_evs/docs/project_documentation/agile_implementation_plan.md)**: High-level roadmap and strategy.
-*   **[Project Track Record](file:///home/nicola/dev/backcast_evs/docs/project_documentation/project_track_record.md)**: Historical record of completed tasks and metrics.
+**Quick Navigation:**
+*   **[Documentation Guide](file:///home/nicola/dev/backcast_evs/docs/00-meta/documentation-guide.md)**: How to find and maintain documentation
+*   **[Product Vision](file:///home/nicola/dev/backcast_evs/docs/01-product-scope/vision.md)**: Business goals and user needs
+*   **[System Map](file:///home/nicola/dev/backcast_evs/docs/02-architecture/00-system-map.md)**: High-level architecture overview
+*   **[Current Iteration](file:///home/nicola/dev/backcast_evs/docs/03-project-plan/current-iteration.md)**: Active sprint status and goals
+*   **[PDCA Prompts](file:///home/nicola/dev/backcast_evs/docs/04-pdca-prompts/)**: AI collaboration templates
+
+**Detailed Documentation:**
+*   **Architecture:** `docs/02-architecture/` - Bounded contexts, cross-cutting concerns, ADRs
+*   **Project History:** `docs/03-project-plan/iterations/` - Completed PDCA cycles
+*   **Legacy Docs:** `old_docs/` - Preserved for reference (monolithic architecture doc, historical records)
 
 ## 4. Work Process (Strict Rules)
 
 > [!IMPORTANT]
 > To ensure project health and visibility, the following rules are **MANDATORY**:
-> 1.  **PDCA Alignment**: Every major change must follow the Plan-Do-Check-Act cycle.
-> 2.  **Documentation Updates**: Both the **[Agile Implementation Plan](file:///home/nicola/dev/backcast_evs/docs/project_documentation/agile_implementation_plan.md)** and the **[Project Track Record](file:///home/nicola/dev/backcast_evs/docs/project_documentation/project_track_record.md)** MUST be updated at the end of every PDCA cycle.
+> 1.  **PDCA Alignment**: Every major change must follow the Plan-Do-Check-Act cycle using the **[PDCA Prompts](file:///home/nicola/dev/backcast_evs/docs/04-pdca-prompts/)**.
+> 2.  **Documentation Updates**: 
+>     - Update **[Current Iteration](file:///home/nicola/dev/backcast_evs/docs/03-project-plan/current-iteration.md)** during active work
+>     - Create iteration record in `docs/03-project-plan/iterations/` after completion
+>     - Update **[Project Backlog](file:///home/nicola/dev/backcast_evs/docs/03-project-plan/backlog.md)** as priorities change
+>     - Update architecture docs when patterns change
 
 ---
 > [!NOTE]

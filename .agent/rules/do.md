@@ -1,5 +1,5 @@
 ---
-trigger: model_decision
+trigger: manual
 description: do phase,instructions for implement or execute phase
 ---
 
