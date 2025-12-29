@@ -22,38 +22,15 @@ Backcast EVS is a FastAPI-based backend implementing Entity Versioning Control S
 
 ## Key Bounded Contexts
 
-### 1. Authentication & Authorization
-**Purpose:** User identity, JWT tokens, role-based access  
-**Code:** `app/api/routes/auth.py`, `app/services/auth.py`, `app/core/security.py`  
-**Status:** ✅ Implemented
+The system is partitioned into the following bounded contexts. See [01-bounded-contexts.md](01-bounded-contexts.md) for detailed definitions, responsibilities, and interactions.
 
-### 2. User Management
-**Purpose:** CRUD for users with versioned profiles  
-**Code:** `app/api/routes/users.py`, `app/services/user.py`, `app/repositories/user.py`  
-**Versioning:** Non-branching (simple version history)  
-**Status:** ✅ Implemented
-
-### 3. Department Management  
-**Purpose:** Department entity CRUD  
-**Status:** 🔵 Planned (Story 2.2)
-
-### 4. Project & WBE Management  
-**Purpose:** Hierarchical project structure with machine tracking  
-**Versioning:** Branch-enabled (supports change orders)  
-**Status:** 📋 Backlog
-
-### 5. Cost Element & Financial Tracking  
-**Purpose:** Departmental budgets, cost registration, forecasts  
-**Versioning:** Branch-enabled  
-**Status:** 📋 Backlog
-
-### 6. Change Order & Branching  
-**Purpose:** Branch isolation, merge, comparison  
-**Status:** 📋 Backlog
-
-### 7. EVM Calculations & Reporting  
-**Purpose:** PV/EV/AC calculations, CPI/SPI metrics, variance analysis  
-**Status:** 📋 Backlog
+1.  Authentication & Authorization
+2.  User Management
+3.  Department Management
+4.  Project & WBE Management
+5.  Cost Element & Financial Tracking
+6.  Change Order & Branching
+7.  EVM Calculations & Reporting
 
 ## Versioning Architecture (EVCS Core)
 
@@ -101,21 +78,11 @@ backend/
 - **Security:** Argon2 password hashing, JWT access tokens, role-based middleware
 - **Performance:** <200ms API response target, query optimization via indexes
 
-## Current State (Sprint 2)
+## Roadmap
 
-**Completed:**
-- ✅ Infrastructure & tooling (MyPy, Ruff, pytest, CI/CD)
-- ✅ Authentication system (register, login, JWT)
-- ✅ User management (CRUD, soft delete, admin authorization)
-- ✅ Test coverage: 81.57% (39/39 tests passing)
-
-**In Progress:**
-- 🔵 Documentation restructuring
-
-**Next:**
-- 📋 Department Management (Story 2.2)
-- 📋 EVCS Core (versioning helpers, time-travel queries)
-- 📋 Project/WBE entities with branch support
+- Department Management
+- EVCS Core (versioning helpers, time-travel queries)
+- Project/WBE entities with branch support
 
 ## Key Design Decisions
 

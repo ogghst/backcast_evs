@@ -9,13 +9,6 @@ This document defines the bounded contexts used to partition the Backcast EVS sy
 ### 1. Authentication & Authorization
 **Responsibility:** User identity verification, token management, role-based access control  
 **Owner:** Backend Team  
-**Status:** ✅ Implemented  
-**Code Locations:**
-- `app/core/security.py` - Password hashing, JWT creation/decoding
-- `app/api/routes/auth.py` - Login, register, token endpoints
-- `app/api/dependencies/auth.py` - Current user dependency
-- `app/services/auth.py` - Authentication business logic
-
 **Documentation:** [contexts/auth/](contexts/auth/)
 
 ---
@@ -23,15 +16,6 @@ This document defines the bounded contexts used to partition the Backcast EVS sy
 ### 2. User Management
 **Responsibility:** User CRUD operations, profile management, admin user creation  
 **Owner:** Backend Team  
-**Status:** ✅ Implemented  
-**Code Locations:**
-- `app/models/domain/user.py` - User head + UserVersion tables
-- `app/models/schemas/user.py` - Pydantic request/response schemas
-- `app/api/routes/users.py` - User CRUD endpoints
-- `app/services/user.py` - User business logic
-- `app/repositories/user.py` - User data access
-- `app/commands/user.py` - Create/Update/Delete commands
-
 **Versioning:** Non-branching (simple version history)  
 **Documentation:** [contexts/user-management/](contexts/user-management/)
 
@@ -39,16 +23,13 @@ This document defines the bounded contexts used to partition the Backcast EVS sy
 
 ### 3. Department Management
 **Responsibility:** Department CRUD operations for budget tracking  
-**Owner:** Backend Team  
-**Status:** 📋 Planned (Story 2.2)  
-**Code Locations:** TBD
+**Owner:** Backend Team
 
 ---
 
 ### 4. Project & WBE Management
 **Responsibility:** Project hierarchy, Work Breakdown Elements (machines), revenue allocation  
 **Owner:** Backend Team  
-**Status:** 📋 Backlog  
 **Versioning:** Branch-enabled (supports change orders)
 
 ---
@@ -56,22 +37,19 @@ This document defines the bounded contexts used to partition the Backcast EVS sy
 ### 5. Cost Element & Financial Tracking
 **Responsibility:** Departmental budgets, cost registration, forecasts, earned value tracking  
 **Owner:** Backend Team  
-**Status:** 📋 Backlog  
 **Versioning:** Branch-enabled
 
 ---
 
 ### 6. Change Order Processing
 **Responsibility:** Branch creation, modification, comparison, merging  
-**Owner:** Backend Team  
-**Status:** 📋 Backlog
+**Owner:** Backend Team
 
 ---
 
 ### 7. EVM Calculations & Reporting
 **Responsibility:** Planned Value, Earned Value, Actual Cost, performance indices, variance analysis  
-**Owner:** Backend Team  
-**Status:** 📋 Backlog
+**Owner:** Backend Team
 
 ---
 

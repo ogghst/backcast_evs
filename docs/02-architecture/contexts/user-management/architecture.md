@@ -1,7 +1,6 @@
 # User Management Context
 
 **Last Updated:** 2025-12-29  
-**Status:** ✅ Implemented  
 **Owner:** Backend Team
 
 ## Responsibility
@@ -159,20 +158,11 @@ graph TB
 
 ---
 
-## Test Coverage
-
-**API Tests:** 10 tests covering all CRUD operations, authorization rules  
-**Service Tests:** 1 test for basic CRUD flow  
-**Command Tests:** 3 tests for Create/Update/Delete commands  
-**Coverage:** 81.57% overall, UserService at 74%
-
----
-
 ## Future Enhancements
 
-- [ ] User profile photos
-- [ ] Email verification flow
-- [ ] Password reset capability
-- [ ] User preferences/settings
-- [ ] Activity log per user
-- [ ] Department hierarchy
+- User profile photos
+- Email verification flow
+- Password reset capability
+- User preferences/settings
+- Activity log per user
+- Department hierarchy
