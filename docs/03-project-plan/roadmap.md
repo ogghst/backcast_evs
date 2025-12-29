@@ -1,156 +1,46 @@
 # Development Roadmap
 
-**Last Updated:** 2025-12-29  
-**Project Timeline:** 16 weeks (8 sprints × 2 weeks)  
+**Last Updated:** 2025-12-29
+**Project Timeline:** 16 weeks (8 sprints × 2 weeks)
 **Methodology:** Scrum with PDCA cycle integration
 
 ---
 
 ## Overview
 
-This roadmap defines the phased delivery approach for Backcast EVS backend, organizing work into 4 major phases across 8 epics.
+This roadmap defines the phased delivery approach for Backcast EVS backend.
+Detailed breakdown of stories and tasks are located in the individual Sprint files.
 
 **See Also:**
-- [Project Backlog](backlog.md) - Detailed epic/story breakdown
-- [Current Iteration](current-iteration.md) - Active sprint status
+- [Epics and User Stories](epics.md) - Detailed epic/story breakdown
 
 ---
 
 ## Phase 1: Foundation (Sprints 1-2) ✅ COMPLETE
 
-### Sprint 1: Infrastructure Setup ✅
-**Goal:** Establish development environment and core infrastructure  
-**Story Points:** 21
-
-**Deliverables:**
-- [x] Working dev environment with all tools configured (uv, ruff, mypy, pytest)
-- [x] Database connection and Alembic migration system
-- [x] Basic auth endpoints (/login, /register, JWT)
-- [x] CI pipeline running on every PR (lint, type-check, test)
-
----
-
-### Sprint 2: Core Infrastructure & User Management ✅
-**Goal:** Complete foundation and implement user management  
-**Story Points:** 23
-
-**Deliverables:**
-- [x] User management endpoints (/users/*)
-- [x] Department management endpoints (/departments/*) - PLANNED
-- [x] 80%+ test coverage
-- [x] Interactive API docs at /docs
-
-**Status:** Story 2.1 complete (User Management), Story 2.2 planned (Departments)
+- [Sprint 1: Infrastructure Setup](sprints/sprint-01.md)
+- [Sprint 2: Core Infrastructure & User Management](sprints/sprint-02.md)
 
 ---
 
 ## Phase 2: Versioning System (Sprints 3-4) 📋 PLANNED
 
-### Sprint 3: EVCS Core Implementation
-**Goal:** Implement entity versioning system foundation  
-**Story Points:** 26
-
-**Deliverables:**
-- [ ] Reusable versioning mixins (`VersionableHeadMixin`, `VersionSnapshotMixin`)
-- [ ] Generic repository with MyPy validation
-- [ ] Helper functions for all lifecycle operations
-- [ ] Comprehensive versioning tests
-
-**Technical Focus:**
-- Composite PK pattern: `(id, branch)` for heads, `(head_id, valid_from)` for versions
-- Type-safe generic repository
-- Create/update/soft delete/restore/hard delete operations
-
----
-
-### Sprint 4: Time-Travel & History Queries
-**Goal:** Enable historical queries and version navigation  
-**Story Points:** 24
-
-**Deliverables:**
-- [ ] Time-travel query support (`get_entity_at_date`)
-- [ ] Version history endpoints
-- [ ] Time machine date context in API
-- [ ] Historical query tests
-
-**Features:**
-- Query entity state at any past timestamp
-- Range queries on `valid_from` / `valid_to`
-- Support for deleted entities in history
+- [Sprint 3: EVCS Core Implementation](sprints/sprint-03.md)
+- [Sprint 4: Time-Travel & History Queries](sprints/sprint-04.md)
 
 ---
 
 ## Phase 3: Core Entities (Sprints 5-6) 📋 PLANNED
 
-### Sprint 5: Project & WBE Management
-**Goal:** Implement hierarchical project structure  
-**Story Points:** 25
-
-**Deliverables:**
-- [ ] Project CRUD with versioning
-- [ ] WBE CRUD with versioning
-- [ ] Hierarchical relationship integrity
-- [ ] API endpoints: /projects/*, /wbes/*
-
-**Data Models:**
-- Project (head + version, non-branching)
-- WBE (head + version, branch-enabled)
-- One-to-many: Project → WBEs
-
----
-
-### Sprint 6: Cost Elements & Financial Structure
-**Goal:** Complete project hierarchy and enable budget allocation  
-**Story Points:** 26
-
-**Deliverables:**
-- [ ] Cost element CRUD with versioning
-- [ ] Budget allocation endpoints
-- [ ] Revenue allocation logic
-- [ ] Budget validation rules
-
-**Business Logic:**
-- Total WBE budgets ≤ project budget
-- Cost element budgets ≤ WBE allocation
-- Revenue allocations reconcile to contract value
+- [Sprint 5: Project & WBE Management](sprints/sprint-05.md)
+- [Sprint 6: Cost Elements & Financial Structure](sprints/sprint-06.md)
 
 ---
 
 ## Phase 4: Advanced Features (Sprints 7-8) 📋 PLANNED
 
-### Sprint 7: Branching & Change Orders
-**Goal:** Implement branch isolation and change order workflow  
-**Story Points:** 28
-
-**Deliverables:**
-- [ ] Branch creation and management
-- [ ] Change order workflow
-- [ ] Branch comparison endpoints
-- [ ] Merge functionality
-
-**Features:**
-- Deep copy on branch creation (`co-{short_id}`)
-- Branch comparison with financial impact analysis
-- Atomic merge operation
-- Branch locking mechanism
-
----
-
-### Sprint 8: EVM Calculations & Baselines
-**Goal:** Enable EVM reporting and baseline management  
-**Story Points:** 27
-
-**Deliverables:**
-- [ ] Baseline management endpoints
-- [ ] EVM calculation service
-- [ ] Schedule baseline logic
-- [ ] Performance reports
-
-**Calculations:**
-- PV (Planned Value) using schedule baselines + progression types
-- EV (Earned Value) from % complete
-- AC (Actual Cost) from cost registrations
-- CPI, SPI, TCPI, CV, SV, VAC
+- [Sprint 7: Branching & Change Orders](sprints/sprint-07.md)
+- [Sprint 8: EVM Calculations & Baselines](sprints/sprint-08.md)
 
 ---
 
@@ -269,21 +159,41 @@ A user story is done when:
 
 ---
 
-## Velocity Tracking
+## Story Point Reference
 
-| Sprint | Committed Points | Completed Points | Velocity | Notes |
-|--------|------------------|------------------|----------|-------|
-| 1 | 21 | 21 | 21 | Infrastructure setup completed |
-| 2 | 23 | 23 (estimated) | ~22 | User management (2.1 complete, 2.2 partial) |
-| 3 | 26 | TBD | TBD | EVCS core |
-| 4 | 24 | TBD | TBD | Time-travel queries |
-| 5 | 25 | TBD | TBD | Projects & WBEs |
-| 6 | 26 | TBD | TBD | Cost elements |
-| 7 | 28 | TBD | TBD | Branching |
-| 8 | 27 | TBD | TBD | EVM & baselines |
-
-**Average Target Velocity:** 25 ± 3 story points
+| Points | Complexity | Time Estimate | Example |
+|--------|------------|---------------|---------|
+| 1 | Trivial | 1-2 hours | Add validation rule |
+| 2 | Simple | 2-4 hours | Add new field |
+| 3 | Easy | 4-8 hours | Simple CRUD endpoint |
+| 5 | Medium | 1-2 days | Complex endpoint |
+| 8 | Complex | 2-4 days | New entity with versioning |
+| 13 | Very Complex | 4-6 days | Branch merge implementation |
+| 21 | Epic | 1-2 weeks | Complete versioning system |
 
 ---
 
-**Project Motto:** *"Type-safe, test-driven, incrementally delivered."*
+## Future Enhancements (Icebox)
+
+**Infrastructure:**
+- [ ] Automated performance testing
+- [ ] Load testing framework
+- [ ] Observability (metrics, tracing)
+
+**Security:**
+- [ ] Two-factor authentication (2FA)
+- [ ] OAuth2 integration (Google, GitHub)
+- [ ] API key management
+
+**Developer Experience:**
+- [ ] Automated API client generation
+- [ ] Development environment automation
+- [ ] Enhanced CI/CD pipeline
+
+**ERP Integration:**
+- [ ] Automated cost data import
+- [ ] Project scheduling tool integration
+- [ ] Multi-currency support
+- [ ] Resource management (labor hours, materials)
+- [ ] Risk management integration
+- [ ] Portfolio-level analytics
