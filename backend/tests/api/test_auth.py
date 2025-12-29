@@ -7,7 +7,7 @@ from app.core.config import settings
 
 
 @pytest.mark.asyncio
-async def test_register_endpoint_success(async_client: AsyncClient, db_session: Any):
+async def test_register_endpoint_success(async_client: AsyncClient, db_session: Any) -> None:
     # db_session fixture used to ensure DB is clean/ready
     payload = {
         "email": "api_reg@example.com",
@@ -29,7 +29,7 @@ async def test_register_endpoint_success(async_client: AsyncClient, db_session: 
 @pytest.mark.asyncio
 async def test_register_endpoint_duplicate_email(
     async_client: AsyncClient, db_session: Any
-):
+) -> None:
     # First registration
     payload = {
         "email": "duplicate_api@example.com",
@@ -47,7 +47,7 @@ async def test_register_endpoint_duplicate_email(
 
 
 @pytest.mark.asyncio
-async def test_login_endpoint_success(async_client: AsyncClient, db_session: Any):
+async def test_login_endpoint_success(async_client: AsyncClient, db_session: Any) -> None:
     # Register first
     payload = {
         "email": "login_api@example.com",
@@ -70,7 +70,7 @@ async def test_login_endpoint_success(async_client: AsyncClient, db_session: Any
 
 
 @pytest.mark.asyncio
-async def test_login_endpoint_invalid_credentials(async_client: AsyncClient):
+async def test_login_endpoint_invalid_credentials(async_client: AsyncClient) -> None:
     login_data = {"username": "wrong@example.com", "password": "wrongpassword"}
     response = await async_client.post(
         f"{settings.API_V1_STR}/auth/login",
@@ -81,7 +81,7 @@ async def test_login_endpoint_invalid_credentials(async_client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_me_endpoint_success(async_client: AsyncClient, db_session: Any):
+async def test_me_endpoint_success(async_client: AsyncClient, db_session: Any) -> None:
     # Register and login
     payload = {
         "email": "me_api@example.com",
@@ -105,6 +105,6 @@ async def test_me_endpoint_success(async_client: AsyncClient, db_session: Any):
 
 
 @pytest.mark.asyncio
-async def test_me_endpoint_no_token(async_client: AsyncClient):
+async def test_me_endpoint_no_token(async_client: AsyncClient) -> None:
     response = await async_client.get(f"{settings.API_V1_STR}/auth/me")
     assert response.status_code == 401

@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # Include routers
-from app.api.routes import auth
+from app.api.routes import auth, users
 from app.core.config import settings
 from app.core.logging import setup_logging
 
@@ -25,7 +25,7 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     lifespan=lifespan,
     debug=settings.DEBUG,
-    
+
 )
 
 # Set all CORS enabled origins
@@ -44,3 +44,4 @@ async def root() -> dict[str, str]:
 
 
 app.include_router(auth.router, prefix=settings.API_V1_STR)
+app.include_router(users.router, prefix=f"{settings.API_V1_STR}/users", tags=["Users"])

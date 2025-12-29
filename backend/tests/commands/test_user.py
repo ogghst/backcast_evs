@@ -1,16 +1,17 @@
 from datetime import UTC, datetime
+from typing import Any
 from uuid import uuid4
 
 import pytest
 from sqlalchemy import select
 
-from app.commands.user import CreateUserCommand, UpdateUserCommand
+from app.commands.user import CreateUserCommand, DeleteUserCommand, UpdateUserCommand
 from app.core.versioning.commands import CommandMetadata
 from app.models.domain.user import User, UserVersion
 
 
 @pytest.mark.asyncio
-async def test_create_and_update_user_command(db_session):
+async def test_create_and_update_user_command(db_session: Any) -> None:
     # 1. Create User Command
     user_id = uuid4()
     metadata = CommandMetadata(
@@ -70,7 +71,7 @@ async def test_create_and_update_user_command(db_session):
 
 
 @pytest.mark.asyncio
-async def test_undo_create_user(db_session):
+async def test_undo_create_user(db_session: Any) -> None:
     user_id = uuid4()
     metadata = CommandMetadata(
         command_type="CREATE",
@@ -99,13 +100,13 @@ async def test_undo_create_user(db_session):
     assert result.scalar_one_or_none() is None
 
     # Verify versions deleted (cascade)
-    stmt = select(UserVersion).where(UserVersion.head_id == user_id)
-    result = await db_session.execute(stmt)
+    stmt_v = select(UserVersion).where(UserVersion.head_id == user_id)
+    result = await db_session.execute(stmt_v)
     assert len(result.scalars().all()) == 0
 
 
 @pytest.mark.asyncio
-async def test_undo_update_user(db_session):
+async def test_undo_update_user(db_session: Any) -> None:
     # 1. Create initial user
     user_id = uuid4()
     init_cmd = CreateUserCommand(
@@ -155,3 +156,60 @@ async def test_undo_update_user(db_session):
     v1_reopened = (await db_session.execute(stmt)).scalar_one()
     assert v1_reopened.valid_to is None
     assert v1_reopened.full_name == "Original Name"
+
+
+@pytest.mark.asyncio
+async def test_delete_user_command(db_session: Any) -> None:
+    # 1. Setup: Create a user manually (or via CreateUserCommand if accessible, but manual is safer for unit test isolation)
+    user_id = uuid4()
+
+    # Create Head
+    user = User(id=user_id, email=f"delete_test_{user_id}@example.com", hashed_password="pw")
+    db_session.add(user)
+
+    # Create Active Version
+    now = datetime.now(UTC)
+    version = UserVersion(
+        head_id=user.id,
+        full_name="To Be Deleted",
+        role="viewer",
+        is_active=True,
+        valid_from=now,
+        created_by_id=user_id
+    )
+    db_session.add(version)
+    await db_session.commit()
+
+    # 2. Execute DeleteUserCommand
+    delete_time = datetime.now(UTC)
+    metadata = CommandMetadata(
+        command_type="DELETE",
+        user_id=user_id,
+        timestamp=delete_time,
+        description="Soft Delete User"
+    )
+
+    cmd = DeleteUserCommand(metadata=metadata, user_id=user_id)
+    await cmd.execute(db_session)
+
+    # 3. Assertions
+
+    # Verify strict versioning pattern: Old version closed, New version created with is_active=False
+
+    # Check old version closed
+    stmt = select(UserVersion).where(
+        UserVersion.head_id == user_id,
+        UserVersion.valid_to == delete_time
+    )
+    closed_version = (await db_session.execute(stmt)).scalar_one()
+    assert closed_version.is_active is True
+
+    # Check new version open and inactive
+    stmt = select(UserVersion).where(
+        UserVersion.head_id == user_id,
+        UserVersion.valid_to.is_(None)
+    )
+    new_version = (await db_session.execute(stmt)).scalar_one()
+    assert new_version.is_active is False
+    assert new_version.valid_from == delete_time
+    assert new_version.full_name == "To Be Deleted" # Should preserve other data

@@ -33,3 +33,17 @@ class UserRepository(BaseRepository[User, UserVersion]):
         )
         result = await self.session.execute(stmt)
         return result.unique().scalar_one_or_none()
+
+    async def get_all(self, skip: int = 0, limit: int = 100) -> list[User]:
+        """
+        Get all users with pagination.
+        """
+        stmt = (
+            select(User)
+            .options(selectinload(User.versions))
+            .offset(skip)
+            .limit(limit)
+            .order_by(User.id)  # Ensure deterministic order
+        )
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())

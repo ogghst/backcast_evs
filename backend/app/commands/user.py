@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any
 from uuid import UUID
 
@@ -155,6 +156,92 @@ class UpdateUserCommand(VersionCommand[UserVersion]):
             await session.execute(del_stmt)
 
             # Reopen previous version
+            upd_stmt = (
+                update(UserVersion)
+                .where(
+                    UserVersion.head_id == self.previous_version_pk[0],
+                    UserVersion.valid_from == self.previous_version_pk[1],
+                )
+                .values(valid_to=None)
+            )
+            await session.execute(upd_stmt)
+
+
+class DeleteUserCommand(VersionCommand[UserVersion]):
+    """
+    Command to soft-delete a user.
+    Creates a new version with is_active=False.
+    """
+
+    def __init__(
+        self,
+        metadata: CommandMetadata,
+        user_id: UUID,
+    ):
+        super().__init__(metadata)
+        self.user_id = user_id
+        # We store PK of the version created by this command for undo
+        self.new_version_pk: tuple[UUID, datetime] | None = None
+        # We store PK of the version closed by this command for undo
+        self.previous_version_pk: tuple[UUID, datetime] | None = None
+
+    async def execute(self, session: AsyncSession) -> UserVersion:
+        # 1. Get current active version
+        stmt = (
+            select(UserVersion)
+            .where(UserVersion.head_id == self.user_id, UserVersion.valid_to.is_(None))
+            .order_by(UserVersion.valid_from.desc())
+            .limit(1)
+        )
+        result = await session.execute(stmt)
+        current_version = result.scalar_one_or_none()
+
+        if not current_version:
+            raise ValueError(f"No active version found for user {self.user_id}")
+
+        self.previous_version_pk = (current_version.head_id, current_version.valid_from)
+
+        # 2. Close current version
+        current_version.valid_to = self.metadata.timestamp
+        session.add(current_version)
+
+        # 3. Create new version (Copy of old + is_active=False)
+        source_data = current_version.to_dict()
+        exclude_fields = {
+            "head_id",
+            "valid_from",
+            "valid_to",
+            "created_by_id",
+        }
+        new_data = {k: v for k, v in source_data.items() if k not in exclude_fields}
+
+        # Override is_active
+        new_data["is_active"] = False
+
+        new_version = UserVersion(
+            head_id=self.user_id,
+            valid_from=self.metadata.timestamp,
+            created_by_id=self.metadata.user_id,
+            **new_data,
+        )
+        session.add(new_version)
+        await session.flush()
+
+        self.new_version_pk = (new_version.head_id, new_version.valid_from)
+
+        return new_version
+
+    async def undo(self, session: AsyncSession) -> None:
+        """Undo soft delete: remove inactive version, reopen previous."""
+        if self.new_version_pk and self.previous_version_pk:
+            # 1. Delete the "deleted" version
+            del_stmt = delete(UserVersion).where(
+                UserVersion.head_id == self.new_version_pk[0],
+                UserVersion.valid_from == self.new_version_pk[1],
+            )
+            await session.execute(del_stmt)
+
+            # 2. Reopen the previous version
             upd_stmt = (
                 update(UserVersion)
                 .where(

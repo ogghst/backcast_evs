@@ -1,89 +1,40 @@
-# Backend Coding Standards
+# Coding Standards
 
-This document outlines the coding standards and best practices for the Backcast EVS backend. Adherence to these standards ensures code quality, maintainability, and consistency across the codebase.
+## 1. Python Standards
 
-Backend project resides in `backend/` folder. All commands are relative to that folder.
+### 1.1 Type Safety (MyPy)
+- **Strict Mode:** All code must pass `mypy --strict`.
+- **Explicit Returns:** All functions must have return type hints.
+- **Generics:** Use `TypeVar` for reusable components.
+- **No Implicit Optional:** Explicitly use `None` as default for `Optional` arguments.
 
-## 1. Type Safety
+### 1.2 Linting (Ruff)
+- **Configuration:** `pyproject.toml`
+- **Line Length:** 88 characters (Black compatible)
+- **Import Sorting:** `isort` compatible (enforced by Ruff I001)
+- **FastAPI Exception:** `B008` (function calls in default arguments) is ignored to allow `Depends()`.
 
-We enforce strict type safety using MyPy.
+### 1.3 Testing
+- **Structure:**
+  - `tests/unit/`: Isolated tests for services, repositories, commands.
+  - `tests/api/`: Integration tests for API endpoints.
+- **Fixtures:** Use `conftest.py` for shared resources (`db_session`, `client`).
+- **Async:** Use `pytest-asyncio` strict mode.
+- **Coverage:** Minimum 80% coverage required.
 
-*   **Requirement**: All new code must pass `mypy --strict`.
-*   **Type Hints**: Every function signature must have comprehensive type hints for all arguments and return values.
-*   **Avoid `Any`**: Use specific types whenever possible. If `Any` is absolutely necessary, document why.
-*   **No Silence**: Only use `# type: ignore` as a last resort and always include a specific error code (e.g., `# type: ignore[misc]`) and a comment explaining why it's needed.
+## 2. Architecture Patterns
 
-## 2. Formatting and Linting
+### 2.1 Layered Architecture
+- **API**: Validation, Parsing, Dependency Injection.
+- **Service**: Business Logic, Orchestration.
+- **Repository**: Data Access, Query Building.
+- **Model**: Database Schema (SQLAlchemy).
 
-We use **Ruff** for both formatting and linting. It is significantly faster than previous tools and provides a unified experience.
+### 2.2 Versioning (EVCS)
+- **Immutability:** Head + Version Table pattern.
+- **Versioning Mixins:** Use `VersionableHeadMixin` and `VersionSnapshotMixin`.
+- **Commands:** Use Command pattern for state-changing operations (Create/Update/Delete).
 
-*   **Line Length**: Standardized at 88 characters (Black default).
-*   **Sorting**: Imports must be sorted using Ruff's isort-compatible rules.
-*   **Auto-fix**: Run `uv run ruff check --fix .` regularly to maintain standards.
-*   **Pre-commit**: Ruff runs automatically on every commit via pre-commit hooks.
-
-## 3. Naming Conventions
-
-*   **Modules/Packages**: `snake_case`
-*   **Classes**: `PascalCase`
-*   **Functions/Variables**: `snake_case`
-*   **Constants**: `UPPER_SNAKE_CASE`
-
-## 4. Documentation
-
-*   **Docstrings**: All public functions and classes should have Google-style docstrings.
-*   **Comments**: Use comments to explain the "why", not the "how" (the code should be self-explanatory).
-
-## 5. Error Handling
-
-*   Use custom exception classes for domain-specific errors.
-*   Ensure all exceptions are handled at the appropriate layer (e.g., API routes for HTTP exceptions).
-*   Avoid broad `except Exception:` blocks.
-
-## 6. Logging
-*   **Requirement**: All backend code must use the configured logger to track code flow.
-*   **Levels**:
-    *   `DEBUG`: Detailed information for diagnosing problems (e.g., variable values, loop iterations).
-    *   `INFO`: Confirmation that things are working as expected (e.g., startup messages, key state changes).
-    *   **Note**: Avoid using `print()` statements. Use `logger.info()` or `logger.debug()` instead.
-    *   `WARNING`: Indication that something unexpected happened, but the software is still working as expected.
-    *   `ERROR`: Due to a more serious problem, the software has not been able to perform some function.
-*   **Output**: Logs must be written to both console (stdout) and the `logs/` directory.
-*   **Format**: Use the standard format defined in `app/core/logging.py`.
-
-## 7. Project Structure
-
-Adhere to the Clean Architecture layers:
-1.  **API**: `app/api/` (Routes, Dependencies)
-2.  **Domain/Models**: `app/models/` (SQLAlchemy models, Pydantic schemas)
-3.  **Services**: `app/services/` (Business logic)
-4.  **Repositories**: `app/repositories/` (Data access)
-5.  **Core**: `app/core/` (Configuration, Security)
-
-## 8. Versioning Patterns (EVCS Specific)
-
-### 8.1. Snapshot Pattern
-Every update to a versionable entity MUST create a new record in the version table.
-- Use `valid_from` and `valid_to` to manage temporal validity.
-- The current version always has `valid_to = NULL`.
-- When superseding a version, set `valid_to` to the timestamp of the new version's `valid_from`.
-
-### 8.2. Command Pattern
-All state-changing operations (Create, Update, Delete, Merge) MUST be implemented using the **Command Pattern**.
-- Base classes: `VersionCommand` in `app.core.versioning.commands`.
-- Commands must include `CommandMetadata` (timestamp, actor, description).
-- Commands must implement `undo()` where possible to support transaction-level reversals.
-
-### 8.3. Timezone Awareness
-- **Database**: Use `DateTime(timezone=True)` for all timestamp columns.
-- **Python**: Use `datetime.now(timezone.utc)`. Never use `datetime.utcnow()` as it is deprecated and produces naive objects.
-- All temporal comparisons in the EVCS logic must be performed with timezone-aware objects.
-
-### 8.4. Serialization
-- All domain models (Head and Version) must implement a `to_dict()` method.
-- Version models from `BaseVersionMixin` must override `to_dict()` to include their specific entity attributes while calling `super().to_dict()` for metadata.
-
-### 8.5. Schema Transformations
-- **Complex Mappings**: When mapping complex domain entities (especially EVCS entities requiring data from both Head and Version) to Pydantic schemas, do NOT perform manual mapping in route handlers.
-- **Factory Methods**: Implement a static factory method `from_entity(cls, entity: Entity) -> Schema` on the Pydantic schema class.
-- **Example**: `UserPublic.from_entity(user)` instead of manually constructing `UserPublic(...)` in the route.
+## 3. Documentation
+- **Docstrings:** All public functions/classes must have Google-style docstrings.
+- **ADRs:** Significant decisions recorded in `docs/dev/adr/`.

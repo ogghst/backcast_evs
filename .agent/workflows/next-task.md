@@ -4,7 +4,7 @@ description: perform next task
 
 analyze all documents in docs\project_documentation folder, analyze work done in project_track_record.md, and define the next task to implement. follow guidelines in docs/dev folder. ask to user confirmation over the findings.
 
-perform on each task the full PDCA cycle using prompts in .agent/rules:
+perform then the full PDCA cycle using prompts in .agent/rules:
 - plan.md - analysis and plan phase
 - do.md - implementation and execution phase
 - check.md - revision phase

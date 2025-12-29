@@ -11,6 +11,8 @@ from app.core.config import settings
 password_hash = PasswordHash.recommended()
 logger = logging.getLogger(__name__)
 
+ALGORITHM = "HS256"
+
 
 def get_password_hash(password: str) -> str:
     """Hash a password using the recommended algorithm (Argon2)."""
@@ -34,7 +36,7 @@ def create_access_token(
         )
 
     to_encode = {"exp": expire, "sub": str(subject)}
-    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
+    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
 
@@ -42,7 +44,7 @@ def decode_access_token(token: str) -> dict[str, Any] | None:
     """Decode and validate a JWT access token."""
     try:
         payload: dict[str, Any] = jwt.decode(
-            token, settings.SECRET_KEY, algorithms=["HS256"]
+            token, settings.SECRET_KEY, algorithms=[ALGORITHM]
         )
         return payload
     except jwt.InvalidTokenError as e:

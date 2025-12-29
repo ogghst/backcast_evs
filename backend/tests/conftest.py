@@ -32,7 +32,7 @@ def anyio_backend() -> str:
 
 
 @pytest.fixture(scope="function")
-def event_loop():
+def event_loop() -> Any:
     """Create a new event loop for each test with proper cleanup."""
     import asyncio
 
@@ -78,7 +78,7 @@ async def db_session(db_engine: Any) -> AsyncGenerator[AsyncSession, None]:
 
     async with async_session_maker() as session:
         # Override the get_db dependency with the test session
-        async def override_get_db():
+        async def override_get_db() -> AsyncGenerator[AsyncSession, None]:
             yield session
 
         app.dependency_overrides[get_db] = override_get_db
