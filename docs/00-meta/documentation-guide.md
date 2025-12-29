@@ -32,7 +32,8 @@ Our documentation follows a **bounded context** approach to minimize context rot
 ### "What's happening now?"
 → **Project Plan** (`docs/03-project-plan/`)
 - Current iteration status and goals
-- Project backlog and priorities
+- Project epics and user stories
+- Project sprints
 - Historical iteration records (PDCA cycles)
 
 ### "How do I work with AI?"

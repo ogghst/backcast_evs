@@ -78,12 +78,6 @@ backend/
 - **Security:** Argon2 password hashing, JWT access tokens, role-based middleware
 - **Performance:** <200ms API response target, query optimization via indexes
 
-## Roadmap
-
-- Department Management
-- EVCS Core (versioning helpers, time-travel queries)
-- Project/WBE entities with branch support
-
 ## Key Design Decisions
 
 - **ADR-001:** FastAPI + SQLAlchemy 2.0 for async performance

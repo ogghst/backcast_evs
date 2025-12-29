@@ -6,7 +6,7 @@ Backcast EVS (Entity Versioning System) is a Project Budget Management and Earne
 
 ## Business Objectives
 
-**Primary Goal:** Provide the Project Management Directorate with a robust tool to model, test, and validate financial management processes before implementing them in production environments.
+**Primary Goal:** Provide the Project Management Directorate with a robust tool to model, test, and validate financial management processes with ability to time travel project at a specific date
 
 **Key Outcomes:**
 - Enable data-driven decision making through comprehensive EVM metrics
@@ -28,6 +28,7 @@ Backcast EVS (Entity Versioning System) is a Project Budget Management and Earne
 - **Branch Isolation:** Test change orders safely before merging to main
 - **EVM Compliance:** Full ANSI/EIA-748 standard calculations
 - **Hierarchical Tracking:** Projects → WBEs (machines) → Cost Elements (departments)
+- **Time Travel:** Ability to time travel project at a specific date
 
 ## Success Criteria
 

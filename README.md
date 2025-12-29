@@ -85,7 +85,7 @@ This project follows strict quality standards:
 - **Linting:** Zero Ruff errors
 - **Process:** PDCA cycle for all major changes
 
-See [Coding Standards](old_docs/dev/coding_standards.md) for detailed guidelines.
+See [Coding Standards](docs/00-meta/coding_standards.md) for detailed guidelines.
 
 ## License
 

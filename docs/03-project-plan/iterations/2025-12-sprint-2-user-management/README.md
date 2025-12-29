@@ -49,7 +49,7 @@ Implement user management features with complete CRUD operations, authentication
 ### Standardizations Established
 
 **Coding Standards:**
-- Created `docs/dev/coding_standards.md`
+- Created `docs/00-meta/coding_standards.md`
 - Ruff configuration: ignore B008 for FastAPI Depends
 - MyPy strict mode required
 - 80% minimum test coverage
@@ -139,7 +139,7 @@ Implement user management features with complete CRUD operations, authentication
 ## Artifacts
 
 - [CHECK Report](file:///home/nicola/.gemini/antigravity/brain/12e0b087-26bb-44de-b027-e662e0e67647/check_report_story_2_1.md)
-- [Coding Standards](file:///home/nicola/dev/backcast_evs/docs/dev/coding_standards.md)
+- [Coding Standards](file:///home/nicola/dev/backcast_evs/docs/00-meta/coding_standards.md)
 - [PDCA Prompts](file:///home/nicola/dev/backcast_evs/docs/04-pdca-prompts/)
 - [Project Track Record](file:///home/nicola/dev/backcast_evs/docs/project_documentation/project_track_record.md)
 

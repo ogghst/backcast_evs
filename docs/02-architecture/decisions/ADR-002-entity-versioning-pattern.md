@@ -87,4 +87,3 @@ This pattern is implemented via SQLAlchemy mixins (`VersionableHeadMixin`, `Vers
 
 The versioning helpers in `app/core/versioning/` encapsulate the complexity, making it easy to add versioning to new entities.
 
-**See Also:** [Backend Architecture - Section 5](file:///home/nicola/dev/backcast_evs/old_docs/dev/backend_architecture.md#5-entity-versioning--branching-system-architecture)

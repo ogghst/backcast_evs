@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # Include routers
-from app.api.routes import auth, users
+from app.api.routes import auth, departments, users
 from app.core.config import settings
 from app.core.logging import setup_logging
 
@@ -44,3 +44,6 @@ async def root() -> dict[str, str]:
 
 app.include_router(auth.router, prefix=settings.API_V1_STR)
 app.include_router(users.router, prefix=f"{settings.API_V1_STR}/users", tags=["Users"])
+app.include_router(
+    departments.router, prefix=f"{settings.API_V1_STR}/departments", tags=["Departments"]
+)

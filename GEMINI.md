@@ -25,7 +25,6 @@ The project is organized into several key directories:
     *   `docs/02-architecture/`: System design, contexts, cross-cutting concerns, ADRs.
     *   `docs/03-project-plan/`: Current work, backlog, iteration history.
     *   `docs/04-pdca-prompts/`: AI collaboration templates.
-*   **`old_docs/`**: Legacy documentation preserved for reference.
 *   **`scripts/`**: Utility scripts for database management and development tasks.
 
 ## 3. Documentation
@@ -42,7 +41,6 @@ The project uses a **bounded-context documentation structure** to minimize conte
 **Detailed Documentation:**
 *   **Architecture:** `docs/02-architecture/` - Bounded contexts, cross-cutting concerns, ADRs
 *   **Project History:** `docs/03-project-plan/iterations/` - Completed PDCA cycles
-*   **Legacy Docs:** `old_docs/` - Preserved for reference (monolithic architecture doc, historical records)
 
 ## 4. Work Process (Strict Rules)
 

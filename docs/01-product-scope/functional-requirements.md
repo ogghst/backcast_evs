@@ -75,7 +75,7 @@ This document specifies the functional requirements for the Backcast EVS system,
 - Required fields: forecast_date (past only), EAC value, ETC (calculated), forecast type (bottom_up/performance_based/management_judgment), assumptions, estimator
 - Maximum 3 forecast dates per cost element
 - Complete history ordered by forecast_date descending
-### 4.2 Forecast Wizard (Post-MVP)
+### 4.2 Forecast Wizard
 - Multi-step guided interface for complex forecast scenarios
 - Steps: type selection, EAC entry with context, assumptions, review/confirmation
 

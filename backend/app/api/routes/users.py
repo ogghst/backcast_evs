@@ -80,7 +80,7 @@ async def create_user(
         ) from e
 
     # Refresh versions to ensure proper serialization
-    await service.session.refresh(user, attribute_names=["versions"])
+
 
     return UserPublic.from_entity(user)
 
@@ -148,8 +148,10 @@ async def update_user(
         raise HTTPException(status_code=404, detail="User not found")
 
     # Refresh versions to ensure we see the update
-    await service.session.refresh(user, attribute_names=["versions"])
 
+
+    # Refresh versions to ensure we see the update (Identity Map fix)
+    await service.session.refresh(user, attribute_names=["versions"])
     return UserPublic.from_entity(user)
 
 
