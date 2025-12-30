@@ -25,8 +25,12 @@ async def read_users(
     service: UserService = Depends(get_user_service),
 ) -> Sequence[UserPublic]:
     """
-    Retrieve users.
-    Only Admis can list all users.
+    Retrieve a list of users.
+
+    - **skip**: Number of users to skip (pagination).
+    - **limit**: Maximum number of users to return (max 100).
+
+    Only Admins can list all users.
     """
     # Assuming role is in the latest version (current_user.versions[0])
     # Ideally, we should have a dependency helper for this or helpers on User object
@@ -34,7 +38,7 @@ async def read_users(
     if latest_version.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="The user doesn't have enough privileges",
+            detail="Admin privileges are required to perform this action",
         )
 
     # We return the User entities. Pydantic UserPublic schema's from_attributes=True
@@ -68,7 +72,7 @@ async def create_user(
     if latest_version.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="The user doesn't have enough privileges",
+            detail="Admin privileges are required to perform this action",
         )
 
     try:
@@ -98,7 +102,7 @@ async def read_user(
     if latest_version.role != "admin" and current_user.id != user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="The user doesn't have enough privileges",
+            detail="Admin privileges are required to perform this action",
         )
 
     user = await service.get_user(user_id)
@@ -125,7 +129,7 @@ async def update_user(
     if latest_version.role != "admin" and current_user.id != user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="The user doesn't have enough privileges",
+            detail="Admin privileges are required to perform this action",
         )
 
     await service.update_user(
@@ -167,7 +171,7 @@ async def delete_user(
     if latest_version.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="The user doesn't have enough privileges",
+            detail="Admin privileges are required to perform this action",
         )
 
     await service.delete_user(user_id=user_id, actor_id=current_user.id)

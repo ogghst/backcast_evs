@@ -10,16 +10,28 @@ if TYPE_CHECKING:
 
 # Shared properties
 class UserBase(BaseModel):
-    email: EmailStr
-    full_name: str
-    department: str | None = None
-    role: str = "viewer"
+    email: EmailStr = Field(
+        description="The email address of the user", examples=["user@example.com"]
+    )
+    full_name: str = Field(
+        description="The full name of the user", examples=["John Doe"]
+    )
+    department: str | None = Field(
+        default=None, description="The department the user belongs to", examples=["IT"]
+    )
+    role: str = Field(
+        default="viewer",
+        description="The role of the user (e.g., admin, viewer)",
+        examples=["viewer"],
+    )
 
 
 # Properties to receive via API on creation
 class UserRegister(UserBase):
     password: str = Field(
-        min_length=8, description="Password must be at least 8 characters"
+        min_length=8,
+        description="Password must be at least 8 characters",
+        examples=["S3cur3P@ssw0rd"],
     )
 
 
