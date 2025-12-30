@@ -57,6 +57,15 @@ class User(BaseHeadMixin, Base):
         lazy="selectin",  # Automatically load versions with user
     )
 
+    # User Preferences (One-to-One)
+    preference: Mapped["UserPreference"] = relationship(
+        "UserPreference",
+        back_populates="user",
+        uselist=False,
+        lazy="selectin",
+        cascade="all, delete-orphan",
+    )
+
     def __repr__(self) -> str:
         return f"<User(id={self.id}, email={self.email})>"
 

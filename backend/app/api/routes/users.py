@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -7,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.dependencies.auth import get_current_active_user
 from app.db.session import get_db
 from app.models.domain.user import User
+from app.schemas import preference
 from app.models.schemas.user import UserPublic, UserRegister, UserUpdate
 from app.services.user import UserService
 
@@ -82,6 +84,35 @@ async def create_user(
     # Refresh versions to ensure proper serialization
 
     return UserPublic.from_entity(user)
+
+
+@router.get("/me/preferences", response_model=preference.UserPreferenceResponse)
+async def get_my_preferences(
+    current_user: User = Depends(get_current_active_user),
+    session: AsyncSession = Depends(get_db),
+) -> Any:
+    """
+    Get current user's preferences.
+    """
+    from app.services.user_preference import UserPreferenceService
+    
+    service = UserPreferenceService(session)
+    return await service.get_my_preference(current_user)
+
+
+@router.put("/me/preferences", response_model=preference.UserPreferenceResponse)
+async def update_my_preferences(
+    pref_in: preference.UserPreferenceUpdate,
+    current_user: User = Depends(get_current_active_user),
+    session: AsyncSession = Depends(get_db),
+) -> Any:
+    """
+    Update current user's preferences.
+    """
+    from app.services.user_preference import UserPreferenceService
+
+    service = UserPreferenceService(session)
+    return await service.update_my_preference(current_user, pref_in.theme)
 
 
 @router.get("/{user_id}", response_model=UserPublic)

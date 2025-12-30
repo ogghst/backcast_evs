@@ -1,0 +1,70 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { getCurrentUser, loginUser } from "@/api/auth";
+import type { UserLogin, UserPublic } from "@/types/auth";
+
+/**
+ * Custom hook that combines authentication state and user data
+ * Provides a unified interface for authentication operations
+ */
+export const useAuth = () => {
+  const queryClient = useQueryClient();
+  const { token, isAuthenticated, login: setToken, logout: clearToken } = useAuthStore();
+
+  // Fetch current user data (only when authenticated)
+  const {
+    data: user,
+    isLoading: isLoadingUser,
+    error: userError,
+  } = useQuery<UserPublic>({
+    queryKey: ["currentUser"],
+    queryFn: getCurrentUser,
+    enabled: isAuthenticated, // Only fetch when authenticated
+    retry: false, // Don't retry on 401
+    staleTime: 5 * 60 * 1000, // Consider fresh for 5 minutes
+  });
+
+  // Login mutation
+  const loginMutation = useMutation({
+    mutationFn: loginUser,
+    onSuccess: (data) => {
+      // Store token in Zustand store
+      setToken(data.access_token);
+      // Invalidate and refetch user data
+      queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+    },
+  });
+
+  // Logout function
+  const logout = () => {
+    clearToken();
+    queryClient.clear(); // Clear all cached data
+  };
+
+  // Login wrapper function
+  const login = async (credentials: UserLogin) => {
+    return loginMutation.mutateAsync(credentials);
+  };
+
+  return {
+    // User data
+    user,
+    isAuthenticated,
+    
+    // Loading states
+    isLoading: isLoadingUser || loginMutation.isPending,
+    isLoadingUser,
+    isLoggingIn: loginMutation.isPending,
+    
+    // Error states
+    error: userError || loginMutation.error,
+    loginError: loginMutation.error,
+    
+    // Actions
+    login,
+    logout,
+    
+    // Token (for debugging, avoid using directly)
+    token,
+  };
+};

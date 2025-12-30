@@ -6,6 +6,8 @@ import {
   UserOutlined,
   ProjectOutlined,
 } from "@ant-design/icons";
+import { useAuth } from "@/hooks/useAuth";
+import { UserProfile } from "@/components/UserProfile";
 
 const { Header, Content, Footer, Sider } = Layout;
 
@@ -16,6 +18,9 @@ const AppLayout: React.FC = () => {
 
   const navigate = useNavigate();
   const location = useLocation();
+  const { logout } = useAuth();
+
+  const [collapsed, setCollapsed] = React.useState(false);
 
   const menuItems = [
     {
@@ -35,9 +40,18 @@ const AppLayout: React.FC = () => {
     },
   ];
 
+  /* Logout logic moved to UserProfile component */
+
+
   return (
     <Layout style={{ minHeight: "100vh" }}>
-      <Sider breakpoint="lg" collapsedWidth="0">
+      <Sider
+        collapsible
+        collapsed={collapsed}
+        onCollapse={(value) => setCollapsed(value)}
+        breakpoint="lg"
+        collapsedWidth="0"
+      >
         <div
           style={{
             height: 32,
@@ -54,7 +68,19 @@ const AppLayout: React.FC = () => {
         />
       </Sider>
       <Layout>
-        <Header style={{ padding: 0, background: colorBgContainer }} />
+        <Header
+          style={{
+            padding: "16px 24px",
+            background: colorBgContainer,
+            display: "flex",
+            justifyContent: "flex-end",
+            alignItems: "center",
+            height: "auto",
+            minHeight: 64,
+          }}
+        >
+          <UserProfile />
+        </Header>
         <Content style={{ margin: "24px 16px 0" }}>
           <div
             style={{
@@ -68,7 +94,7 @@ const AppLayout: React.FC = () => {
           </div>
         </Content>
         <Footer style={{ textAlign: "center" }}>
-          Entity Version Control System ©{new Date().getFullYear()}
+          Backcast ©{new Date().getFullYear()}
         </Footer>
       </Layout>
     </Layout>

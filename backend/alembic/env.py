@@ -11,7 +11,7 @@ from alembic import context
 from app.core.config import settings
 
 # Import all models to ensure they are attached to Base.metadata
-from app.models.domain import department, user  # noqa: F401
+from app.models.domain import department, user, user_preference  # noqa: F401
 from app.models.domain.base import Base
 
 # this is the Alembic Config object, which provides

@@ -6,9 +6,9 @@ const { Title, Paragraph } = Typography;
 const Home: React.FC = () => {
   return (
     <div>
-      <Title level={2}>Welcome to EVCS</Title>
+      <Title level={2}>Welcome to Backcast</Title>
       <Paragraph>
-        This is the dashboard for the Entity Version Control System.
+        This is the dashboard for Backcast.
       </Paragraph>
     </div>
   );

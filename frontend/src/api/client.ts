@@ -1,4 +1,5 @@
 import axios from "axios";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 // Base API URL should come from environment variables
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
@@ -11,10 +12,34 @@ export const apiClient = axios.create({
   withCredentials: true, // For cookie-based auth if needed
 });
 
+// Request interceptor: Add JWT token to Authorization header
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = useAuthStore.getState().token;
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor: Handle 401 Unauthorized responses
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Global error handling can be added here
+    if (error.response?.status === 401) {
+      // Token expired or invalid - logout and redirect to login
+      const { logout } = useAuthStore.getState();
+      logout();
+      
+      // Only redirect if not already on login page
+      if (window.location.pathname !== "/login") {
+        window.location.href = "/login";
+      }
+    }
     return Promise.reject(error);
-  },
+  }
 );

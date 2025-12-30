@@ -9,7 +9,7 @@
 
 ## Goal
 
-Complete quality improvements (linting, type hints, test coverage) from Story 2.1 (User Management) and implement Story 2.2 (Department Management).
+Complete quality improvements (linting, type hints, test coverage) from Story 2.1 (User Management), implement Story 2.2 (Department Management), and align Frontend implementation for User/Department Management (Admin only) and Authentication.
 
 ---
 
@@ -17,6 +17,7 @@ Complete quality improvements (linting, type hints, test coverage) from Story 2.
 
 - **Backend Developer:** Primary implementer
 - **AI Assistant:** Pair programming, quality automation
+- **Frontend Focus:** Admin UI and Authentication integration
 
 ---
 
@@ -28,10 +29,14 @@ Complete quality improvements (linting, type hints, test coverage) from Story 2.
 - [x] All 44 tests passing
 - [x] Documentation restructured (completed)
 - [x] Story 2.2 (Department Management) Implemented
+- [x] Frontend Authentication (Login/Protect) Implemented
+- [x] Frontend Dark/Light Mode (User Preferences) Implemented
+- [ ] Frontend User & Department Management (Admin Only) Implemented
+- [ ] Frontend User Profile Implemented
 
 ---
 
-## Current Status (2025-12-29)
+## Current Status (2025-12-31)
 
 ### Completed This Week
 - ✅ Resolved 109 linting errors automatically
@@ -43,6 +48,9 @@ Complete quality improvements (linting, type hints, test coverage) from Story 2.
 - ✅ Migrating documentation to new structure
 - ✅ Creating bounded context documentation
 - ✅ Setting up ADRs
+- ✅ Updated Sprint 2 plan with frontend alignment
+- ✅ Implemented Frontend Authentication (code complete, testing pending)
+- ✅ Implemented Dark/Light Mode with Persistence
 
 ### Blockers
 _None_
@@ -56,18 +64,32 @@ _None_
 | Linting Errors | 109 | 0 | 0 |
 | MyPy Errors | 47 | 0 | 0 |
 | Test Coverage | ~75% | 81.57% | >80% |
-| Tests Passing | 32/32 | 44/44 | 100% |
+| Tests Passing | 32/32 | 45/45 | 100% |
 
 ---
 
 ## Next Steps
 
-3. Update Department Management documentation (completed)
-4. Begin Story 2.3 (Project Management) or next backlog item
+1. ✅ ~~Implement Frontend Authentication (Context, Login Form)~~
+2. ✅ ~~Implement Dark/Light Mode~~
+3. Test Frontend Authentication (manual + unit tests)
+4. Implement Frontend User Management (Admin List/Edit)
+5. Implement Frontend Department Management (Admin List/Edit)
+6. Update Project Management Story (2.3)
 
 ---
 
 ## Daily Log
+
+### 2025-12-31
+- Implemented User Preferences & Dark Mode
+  - Backend: Created `UserPreference` entity (Head/Version), Repository, Service, and Command.
+  - Backend: Added `GET/PUT /me/preferences` endpoints.
+  - Backend: Fixed circular import issues in `User` model.
+  - Frontend: Created `useUserPreferencesStore` with persistence.
+  - Frontend: Integrated Ant Design Algorithm switching (default/dark).
+  - Frontend: Updated `UserProfile` with toggle switch.
+  - Verified persistence via automated API tests.
 
 ### 2025-12-29
 - Merged PDCA prompts from two locations

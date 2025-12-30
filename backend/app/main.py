@@ -8,6 +8,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes import auth, departments, users
 from app.core.config import settings
 from app.core.logging import setup_logging
+# Import models to ensure they are registered with SQLAlchemy
+from app.models.domain import user_preference  # noqa: F401
 
 
 @asynccontextmanager
@@ -30,7 +32,7 @@ app = FastAPI(
 # Set all CORS enabled origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.BACKEND_CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
