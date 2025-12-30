@@ -65,7 +65,7 @@ class DepartmentVersion(BaseVersionMixin, Base):
 
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     manager_id: Mapped[UUID | None] = mapped_column(
-        SQLUUID, ForeignKey("user.id"), nullable=True
+        SQLUUID, ForeignKey("user.id"), nullable=True, index=True
     )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
