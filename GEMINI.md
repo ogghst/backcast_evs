@@ -19,6 +19,9 @@ The project is organized into several key directories:
     *   `app/models/`: SQLAlchemy ORM models and Pydantic schemas.
     *   `app/repositories/`: Data access layer implementing the versioning logic.
     *   `app/services/`: Business logic orchestrating multiple repositories.
+*   **`frontend/`**: Contains the React application.
+    *   `src/`: Source code for the frontend application.
+    *   `vite.config.ts`: Vite configuration.
 *   **`docs/`**: Bounded-context documentation (product scope, architecture, project plan, PDCA prompts).
     *   `docs/00-meta/`: Entry point and documentation guides.
     *   `docs/01-product-scope/`: Business requirements and vision.

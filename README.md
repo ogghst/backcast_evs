@@ -28,21 +28,34 @@ uv run alembic upgrade head
 
 # Start development server
 uv run uvicorn app.main:app --reload
+
+# Start frontend development server
+cd frontend
+npm run dev
 ```
 
 ### Running Tests
 
 ```bash
+# Backend
 cd backend
 uv run pytest
 uv run pytest --cov=app --cov-report=html
+
+# Frontend
+cd frontend
+npm test
 ```
 
 ### Code Quality
 
 ```bash
-# Linting
+# Backend Linting
 uv run ruff check .
+
+# Frontend Linting
+cd frontend
+npm run lint
 
 # Type checking
 uv run mypy app/
@@ -76,6 +89,14 @@ See [Current Iteration](docs/03-project-plan/current-iteration.md) for details.
 - **Validation:** Pydantic V2
 - **Testing:** pytest, httpx
 - **Quality:** MyPy (strict), Ruff
+
+### Frontend
+
+- **Runtime:** Node.js
+- **Framework:** React 18, Vite 7
+- **UI Library:** Ant Design 5
+- **State Management:** Zustand, React Query
+- **Testing:** Vitest, Playwright
 
 ## Contributing
 
