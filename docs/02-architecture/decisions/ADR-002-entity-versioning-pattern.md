@@ -1,11 +1,15 @@
 # ADR-002: Entity Versioning Pattern
 
 ## Status
-✅ Accepted (2025-12-27)
+
+⚠️ Superseded by [ADR-005: Bitemporal Versioning](ADR-005-bitemporal-versioning.md) (2026-01-01)
+
+_Original acceptance: 2025-12-27_
 
 ## Context
 
 The Backcast EVS system requires Git-like versioning for entities, including:
+
 - Complete history of all changes
 - Time-travel queries to any past state
 - Branch isolation for change orders
@@ -18,11 +22,13 @@ We needed to choose how to implement this versioning at the database level.
 Use **Composite Primary Key** pattern with separate head and version tables:
 
 **Head Table Pattern:**
+
 - `(id, branch)` composite primary key
 - Stores stable identity and current state pointers
 - Mutable (updated when new version created)
 
 **Version Table Pattern:**
+
 - `(head_id, valid_from)` composite primary key
 - Stores complete immutable snapshots
 - Temporal validity: `valid_from` to `valid_to`
@@ -47,6 +53,7 @@ Use **Composite Primary Key** pattern with separate head and version tables:
 ## Alternatives Considered
 
 ### Alternative 1: Single Table with Version Column
+
 ```sql
 CREATE TABLE entities (
     id UUID,
@@ -61,6 +68,7 @@ CREATE TABLE entities (
 - **Rejected:** Difficult to maintain current state pointer
 
 ### Alternative 2: Separate Versioning Table (Generic)
+
 ```sql
 CREATE TABLE entity_versions (
     entity_type VARCHAR,
@@ -75,6 +83,7 @@ CREATE TABLE entity_versions (
 - **Rejected:** Sacrifices too much type safety and queryability
 
 ### Alternative 3: Event Sourcing
+
 Store events, rebuild state by replay.
 
 - **Pros:** Perfect audit trail
@@ -86,4 +95,3 @@ Store events, rebuild state by replay.
 This pattern is implemented via SQLAlchemy mixins (`VersionableHeadMixin`, `VersionSnapshotMixin`) for reuse across all versioned entities.
 
 The versioning helpers in `app/core/versioning/` encapsulate the complexity, making it easy to add versioning to new entities.
-

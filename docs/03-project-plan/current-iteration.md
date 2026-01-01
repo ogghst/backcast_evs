@@ -36,9 +36,10 @@ Complete quality improvements (linting, type hints, test coverage) from Story 2.
 
 ---
 
-## Current Status (2025-12-31)
+## Current Status (2026-01-01)
 
 ### Completed This Week
+
 - ✅ Resolved 109 linting errors automatically
 - ✅ Added type hints to all test files
 - ✅ Fixed MyPy strict mode errors (47 issues)
@@ -51,20 +52,22 @@ Complete quality improvements (linting, type hints, test coverage) from Story 2.
 - ✅ Updated Sprint 2 plan with frontend alignment
 - ✅ Implemented Frontend Authentication (code complete, testing pending)
 - ✅ Implemented Dark/Light Mode with Persistence
+- ✅ **Revised EVCS Core Documentation** (ADR-005, architecture, patterns)
 
 ### Blockers
+
 _None_
 
 ---
 
 ## Metrics
 
-| Metric | Start | Current | Target |
-|--------|-------|---------|--------|
-| Linting Errors | 109 | 0 | 0 |
-| MyPy Errors | 47 | 0 | 0 |
-| Test Coverage | ~75% | 81.57% | >80% |
-| Tests Passing | 32/32 | 45/45 | 100% |
+| Metric         | Start | Current | Target |
+| -------------- | ----- | ------- | ------ |
+| Linting Errors | 109   | 0       | 0      |
+| MyPy Errors    | 47    | 0       | 0      |
+| Test Coverage  | ~75%  | 81.57%  | >80%   |
+| Tests Passing  | 32/32 | 45/45   | 100%   |
 
 ---
 
@@ -73,12 +76,14 @@ _None_
 - Implement Frontend User Management (Admin List/Edit)
 - Implement Frontend Department Management (Admin List/Edit)
 - Update Project Management Story (2.3)
+- Migrate backend entities to new EVCS Core pattern (if approved)
 
 ---
 
 ## Daily Log
 
 ### 2025-12-31
+
 - Implemented User Preferences & Dark Mode
   - Backend: Created `UserPreference` entity (Head/Version), Repository, Service, and Command.
   - Backend: Added `GET/PUT /me/preferences` endpoints.
@@ -89,6 +94,7 @@ _None_
   - Verified persistence via automated API tests.
 
 ### 2025-12-29
+
 - Merged PDCA prompts from two locations
 - Created core documentation structure (README, vision, system-map)
 - Started cross-cutting concerns documentation
@@ -101,6 +107,7 @@ _None_
   - Refactored API routes to remove redundant session refreshes
 
 ### 2025-12-28
+
 - Fixed all linting errors via `ruff --fix`
 - Added type hints to test files
 - Resolved MyPy strict mode issues
@@ -108,6 +115,7 @@ _None_
 - Created coding standards document
 
 ### 2025-12-27
+
 - Initial quality assessment (CHECK phase)
 - Identified 109 linting errors, 47 type errors
 - Planned ACT phase improvements
