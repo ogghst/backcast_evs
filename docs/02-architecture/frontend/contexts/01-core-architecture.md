@@ -35,3 +35,6 @@ The `src/core` or root-level folders manage these concerns:
 ## 4. Key Decisions
 - **Vite over CRA**: Chosen for superior build performance (esbuild/swc).
 - **Strict TypeScript**: No `any` allow-list to ensure robust interfaces between backend and frontend.
+
+## 5. Strong Typing
+Code shall enforce robustness and type safety. No `any` allow-list shall be used. All types shall be defined in the `src/types` folder.

@@ -70,12 +70,9 @@ _None_
 
 ## Next Steps
 
-1. ✅ ~~Implement Frontend Authentication (Context, Login Form)~~
-2. ✅ ~~Implement Dark/Light Mode~~
-3. Test Frontend Authentication (manual + unit tests)
-4. Implement Frontend User Management (Admin List/Edit)
-5. Implement Frontend Department Management (Admin List/Edit)
-6. Update Project Management Story (2.3)
+- Implement Frontend User Management (Admin List/Edit)
+- Implement Frontend Department Management (Admin List/Edit)
+- Update Project Management Story (2.3)
 
 ---
 

@@ -4,7 +4,7 @@
 Ensures application stability, maintainability, and code quality through automated tooling and rigorous testing standards.
 
 ## 2. Technology Stack
-- **Unit/Integration Testing**: Vitest + React Testing Library
+- **Unit/Integration Testing**: Vitest + React Testing Library (Run with `npm run test:coverage`)
 - **E2E Testing**: Playwright (Planned)
 - **Error Tracking**: Sentry
 - **Linting**: ESLint (Flat Config) + Prettier
@@ -15,6 +15,7 @@ Ensures application stability, maintainability, and code quality through automat
 - **Unit Tests**: Focus on pure logic (utils, hooks).
 - **Component Tests**: Use React Testing Library to test components *as the user sees them* (clicking buttons, reading text), not implementation details.
 - **Mocking**: Use MSW (Mock Service Worker) or simple manual mocks for API calls in tests to avoid hitting the real backend.
+- **Coverage**: target 80% coverage for lines and functions. Run `npm run test:coverage` to generate reports.
 
 ### 3.2 Error Monitoring (Sentry)
 - **Production**: All exceptions are captured by Sentry.

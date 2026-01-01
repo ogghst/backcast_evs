@@ -6,7 +6,7 @@ import {
   UserOutlined,
   ProjectOutlined,
 } from "@ant-design/icons";
-import { useAuth } from "@/hooks/useAuth";
+
 import { UserProfile } from "@/components/UserProfile";
 
 const { Header, Content, Footer, Sider } = Layout;
@@ -18,7 +18,7 @@ const AppLayout: React.FC = () => {
 
   const navigate = useNavigate();
   const location = useLocation();
-  const { logout } = useAuth();
+  // const { isAuthenticated } = useAuth(); // Unused currently
 
   const [collapsed, setCollapsed] = React.useState(false);
 

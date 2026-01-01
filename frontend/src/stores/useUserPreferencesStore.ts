@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { theme } from "antd";
+
 import api from "@/api";
 
 interface UserPreferencesState {

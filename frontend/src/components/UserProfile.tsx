@@ -46,7 +46,7 @@ export const UserProfile: React.FC = () => {
     {
       key: "theme-switch",
       label: (
-        <Space justify="space-between" style={{ width: "100%" }}>
+        <Space style={{ width: "100%", justifyContent: "space-between" }}>
           <Space>
             <BulbOutlined />
             <span>Dark Mode</span>
@@ -55,7 +55,7 @@ export const UserProfile: React.FC = () => {
             size="small"
             checked={themeMode === "dark"}
             onChange={toggleTheme}
-            onClick={(checked, e) => e.stopPropagation()}
+            onClick={(_, e) => e.stopPropagation()}
           />
         </Space>
       ),

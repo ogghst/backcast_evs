@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { AuthLayout } from "@/layouts/AuthLayout";
 import type { UserLogin } from "@/types/auth";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 export default function Login() {
   const navigate = useNavigate();

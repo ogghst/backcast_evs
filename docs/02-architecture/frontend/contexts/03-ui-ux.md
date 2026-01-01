@@ -35,3 +35,10 @@ We rely on **Ant Design's** design language but customized via `ConfigProvider`.
 ### 3.4 Key Libraries
 - **dayjs**: Lightweight immutable date library (replaces Moment.js).
 - **@ant-design/charts**: For data visualization (EVM graphs).
+
+### 3.5 State Management
+- **Stores**: Use `zustand` for global state management.
+- **User Preferences**: Store user preferences (dark mode, language) in `localStorage`. Save and Retrieve user preferences in backend via API.
+
+### 3.6 Data Tables
+Data tables are implemented using Ant Design's `Table` component with a custom wrapper `DataTable` in `src/components`. they must implement filtering, sorting, and pagination. Each table layout shall be stored and retrieved in `localStorage` and in backend via user preferences.

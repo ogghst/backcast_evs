@@ -3,6 +3,7 @@ import AppLayout from "@/layouts/AppLayout";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Home from "@/pages/Home";
 import Login from "@/pages/Login";
+import { UserList } from "@/features/users/components/UserList";
 
 export const router = createBrowserRouter([
   {
@@ -27,7 +28,7 @@ export const router = createBrowserRouter([
       },
       {
         path: "/users",
-        element: <div>Users Placeholder</div>,
+        element: <UserList />,
       },
     ],
   },
