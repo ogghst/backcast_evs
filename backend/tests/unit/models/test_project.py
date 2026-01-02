@@ -1,8 +1,7 @@
-import pytest
 from uuid import uuid4
-from datetime import datetime
 
 from app.models.domain.project import Project
+
 
 class TestProjectModel:
     """Test Project model behavior and Mixin composition."""
@@ -32,13 +31,13 @@ class TestProjectModel:
             name="Original",
             branch="main"
         )
-        
+
         # Simulate saved state
         original.id = uuid4()
-        
+
         # Clone
         cloned = original.clone(branch="feature/new", name="Cloned")
-        
+
         assert cloned.project_id == root_id
         assert cloned.branch == "feature/new"
         assert cloned.name == "Cloned"

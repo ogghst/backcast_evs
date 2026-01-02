@@ -16,6 +16,7 @@ from app.core.versioning.commands import (
 )
 from app.core.versioning.service import TemporalService
 from app.models.domain.department import Department
+from app.models.schemas.department import DepartmentCreate, DepartmentUpdate
 
 
 class DepartmentService(TemporalService[Department]):  # type: ignore[type-var]
@@ -49,14 +50,14 @@ class DepartmentService(TemporalService[Department]):  # type: ignore[type-var]
         return result.scalar_one_or_none()
 
     async def create_department(
-        self, dept_data: dict[str, Any], actor_id: UUID
+        self, dept_in: DepartmentCreate, actor_id: UUID
     ) -> Department:
         """Create new department using CreateVersionCommand."""
+        dept_data = dept_in.model_dump()
+
         # Ensure root department_id exists
-        root_id = dept_data.get("department_id")
-        if not root_id:
-            root_id = uuid4()
-            dept_data["department_id"] = root_id
+        root_id = uuid4()
+        dept_data["department_id"] = root_id
 
         cmd = CreateVersionCommand(
             entity_class=Department,  # type: ignore[type-var]
@@ -66,9 +67,10 @@ class DepartmentService(TemporalService[Department]):  # type: ignore[type-var]
         return await cmd.execute(self.session)
 
     async def update_department(
-        self, department_id: UUID, update_data: dict[str, Any], actor_id: UUID
+        self, department_id: UUID, dept_in: DepartmentUpdate, actor_id: UUID
     ) -> Department:
         """Update department using UpdateVersionCommand."""
+        update_data = dept_in.model_dump(exclude_unset=True)
         cmd = UpdateVersionCommand(
             entity_class=Department,  # type: ignore[type-var]
             root_id=department_id,

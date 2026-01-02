@@ -5,7 +5,6 @@ TODO: Replace with proper implementation using new TemporalService.
 
 from datetime import timedelta
 
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -22,10 +21,9 @@ class AuthService:
 
     async def authenticate_user(self, email: str, password: str) -> User | None:
         """Authenticate user by email and password."""
-        # Temporary: Direct database query
-        stmt = select(User).where(User.email == email).limit(1)
-        result = await self.session.execute(stmt)
-        user = result.scalar_one_or_none()
+        from app.services.user import UserService
+        user_service = UserService(self.session)
+        user = await user_service.get_by_email(email)
 
         if not user or not verify_password(password, user.hashed_password):
             return None

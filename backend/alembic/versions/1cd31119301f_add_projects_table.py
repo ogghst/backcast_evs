@@ -1,15 +1,15 @@
-"""create_new_bitemporal_tables
+"""Add projects table
 
-Revision ID: fa9b552e6156
-Revises: f159e127bad9
-Create Date: 2026-01-02 08:33:16.771093
+Revision ID: 1cd31119301f
+Revises: de146576a3d2
+Create Date: 2026-01-02 12:38:27.908294
 
 """
 from collections.abc import Sequence
 
 # revision identifiers, used by Alembic.
-revision: str = 'fa9b552e6156'
-down_revision: str | Sequence[str] | None = 'f159e127bad9'
+revision: str = '1cd31119301f'
+down_revision: str | Sequence[str] | None = 'de146576a3d2'
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

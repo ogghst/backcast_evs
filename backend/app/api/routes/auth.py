@@ -33,14 +33,6 @@ async def register(
                 detail="The user with this user name already exists in the system.",
             )
 
-        # Pydantic -> Dict
-        user_data = user_in.model_dump()
-
-        # Hash password
-        from app.core.security import get_password_hash
-
-        user_data["hashed_password"] = get_password_hash(user_data.pop("password"))
-
         # Create
         # Note: UserService.create_user expects actor_id. For registration,
         # either we use a system actor or the user acts as themselves (bootstrap).
@@ -50,7 +42,8 @@ async def register(
 
         system_actor = UUID("00000000-0000-0000-0000-000000000000")
 
-        user = await service.create_user(user_data=user_data, actor_id=system_actor)
+        # Pass Pydantic model directly
+        user = await service.create_user(user_in=user_in, actor_id=system_actor)
 
         return user
     except ValueError as e:

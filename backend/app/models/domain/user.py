@@ -3,14 +3,19 @@
 Satisfies VersionableProtocol via structural subtyping (duck typing).
 """
 
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import Boolean, String
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.core.db.base import EntityBase
+from app.core.base.base import EntityBase
 from app.models.mixins import VersionableMixin
+
+if TYPE_CHECKING:
+    from app.models.domain.user_preference import UserPreference
+
 
 # from app.models.protocols import VersionableProtocol # Removed as per instruction
 
@@ -49,14 +54,13 @@ class User(EntityBase, VersionableMixin):  # Removed VersionableProtocol from ba
     # - transaction_time: TSTZRANGE
     # - deleted_at: datetime | None
 
-    # TODO: Re-enable after implementing proper lazy loading or removing circular dependency
     # Relationships
-    # preference: Mapped["UserPreference"] = relationship(  # type: ignore
-    #     "UserPreference",
-    #     back_populates="user",
-    #     uselist=False,
-    #     cascade="all, delete-orphan",
-    # )
+    preference: Mapped["UserPreference"] = relationship(
+        "UserPreference",
+        back_populates="user",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self) -> str:
         return f"<User(id={self.id}, user_id={self.user_id}, email={self.email}, full_name={self.full_name})>"

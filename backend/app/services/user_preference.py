@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.simple.service import SimpleService
 from app.models.domain.user_preference import UserPreference
+from app.models.schemas.preference import UserPreferenceCreate, UserPreferenceUpdate
 
 
 class UserPreferenceService(SimpleService[UserPreference]):  # type: ignore[type-var]
@@ -25,13 +26,15 @@ class UserPreferenceService(SimpleService[UserPreference]):  # type: ignore[type
         return result.scalar_one_or_none()
 
     async def create_preference(
-        self, user_id: UUID, theme: str = "light"
+        self, user_id: UUID, pref_in: UserPreferenceCreate
     ) -> UserPreference:
         """Create new user preference."""
         # Check if exists? schema has unique constraint on user_id
-        return await self.create(user_id=user_id, theme=theme)
+        return await self.create(user_id=user_id, **pref_in.model_dump())
 
-    async def update_preference(self, user_id: UUID, theme: str) -> UserPreference:
+    async def update_preference(
+        self, user_id: UUID, pref_in: UserPreferenceUpdate
+    ) -> UserPreference:
         """Update preference for user."""
         pref = await self.get_by_user_id(user_id)
         if not pref:
@@ -40,4 +43,4 @@ class UserPreferenceService(SimpleService[UserPreference]):  # type: ignore[type
             # Let's assume strict update.
             raise ValueError(f"Preferences not found for user {user_id}")
 
-        return await self.update(pref.id, theme=theme)
+        return await self.update(pref.id, **pref_in.model_dump(exclude_unset=True))

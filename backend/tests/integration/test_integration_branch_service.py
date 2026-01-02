@@ -1,18 +1,20 @@
 """Integration tests for BranchableService using Project entity."""
 
 from uuid import uuid4
+
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.versioning.branch_service import BranchableService
+from app.core.branching.service import BranchableService
 from app.models.domain.project import Project
+
 
 @pytest.mark.asyncio
 async def test_branch_service_lifecycle(db_session: AsyncSession):
     """Verify full lifecycle of branched entity via service."""
     service = BranchableService(Project, db_session)
     root_id = uuid4()
-    
+
     # 1. Create Root (Main)
     # ------------------------------------------------------------------
     v1 = await service.create_root(
@@ -77,12 +79,13 @@ async def test_branch_service_lifecycle(db_session: AsyncSession):
     assert reverted.name == "Project Alpha"  # Restored content
     assert reverted.budget == 1000.0
     assert reverted.parent_id == merged_id # History verified
-    
-    
+
+
     # 6. Verify Current State
     current_main = await service.get_current(root_id, branch="main")
     assert current_main is not None
     assert current_main.id == reverted.id
-    
+
     current_feature = await service.get_current(root_id, branch="feature/scope-increase")
+    assert current_feature is not None
     assert current_feature.id == v3_id

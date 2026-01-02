@@ -9,6 +9,7 @@
 - **Protocols:** Use protocols for type hints.
 - **TypeVar:** Use `TypeVar` for reusable components.
 - **Type Checking:** Use type checking for reusable components.
+- **Pydantic:** Use Pydantic for data validation.
 
 ### 1.2 Type Safety (MyPy)
 

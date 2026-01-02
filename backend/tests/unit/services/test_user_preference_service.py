@@ -4,6 +4,10 @@ from uuid import uuid4
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
+
+
+from app.models.schemas.user import UserRegister
+from app.models.schemas.preference import UserPreferenceCreate
 from app.services.user import UserService
 from app.services.user_preference import UserPreferenceService
 
@@ -20,16 +24,15 @@ class TestUserPreferenceService:
 
         # 1. Create a user first (to satisfy FK if needed, or just conceptual)
         user_id = uuid4()
-        user_data = {
-            "user_id": user_id,
-            "email": "pref_test@example.com",
-            "hashed_password": "pwd",
-            "full_name": "Pref User",
-            "role": "user",
-            "department": "Engineering",
-            "is_active": True,
-        }
-        user = await user_service.create_user(user_data, actor_id=uuid4())
+        user_in = UserRegister(
+            email="pref_test@example.com",
+            password="secret_password",
+            full_name="Pref User",
+            role="user",
+            department="Engineering",
+            is_active=True,
+        )
+        user = await user_service.create_user(user_in, actor_id=uuid4())
 
         # 2. Create preference
         # Note: If FK is to 'users.id', we must pass user.id (version ID).
@@ -40,7 +43,7 @@ class TestUserPreferenceService:
 
         pref = await pref_service.create_preference(
             user_id=user.id, # Linking to specific version for now to satisfy DB
-            theme="dark"
+            pref_in=UserPreferenceCreate(theme="dark")
         )
 
         assert pref is not None

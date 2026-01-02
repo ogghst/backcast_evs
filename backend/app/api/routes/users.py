@@ -9,7 +9,11 @@ from app.api.dependencies.auth import get_current_active_user, get_user_service
 from app.db.session import get_db
 from app.models.domain.user import User
 from app.models.schemas.user import UserPublic, UserRegister, UserUpdate
-from app.schemas import preference
+from app.schemas.preference import (
+    UserPreferenceCreate,
+    UserPreferenceResponse,
+    UserPreferenceUpdate,
+)
 from app.services.user import UserService
 
 router = APIRouter()
@@ -52,25 +56,10 @@ async def create_user(
         )
 
     try:
-        # Pydantic model (UserRegister) to dict
-        user_data = user_in.model_dump()
-        # Hash password? In the old code, UserService.create_user likely expected hashed_password
-        # OR it expected plain password and hashed it.
-        # The schema UserRegister has 'password'.
-        # The new CreateVersionCommand expects fields.
-        # Wait, the User model has 'hashed_password'.
-        # I need to hash the password here or in the service.
-        # Let's check UserService.create_user. It passes **user_data to CreateVersionCommand.
-        # CreateVersionCommand(User, ...) -> User(**fields).
-        # User model has 'hashed_password'. It does NOT handle 'password' argument.
-        # So I MUST hash it.
-
-        # Using existing utility (assuming it exists, from app.core.security)
-        from app.core.security import get_password_hash
-
-        user_data["hashed_password"] = get_password_hash(user_data.pop("password"))
-
-        user = await service.create_user(user_data=user_data, actor_id=current_user.id)
+    try:
+        # Pass Pydantic model directly to service
+        # Service handles hashing and dictionary conversion
+        user = await service.create_user(user_in=user_in, actor_id=current_user.id)
         return user
     except ValueError as e:
         raise HTTPException(
@@ -79,7 +68,7 @@ async def create_user(
         ) from e
 
 
-@router.get("/me/preferences", response_model=preference.UserPreferenceResponse)
+@router.get("/me/preferences", response_model=UserPreferenceResponse)
 async def get_my_preferences(
     current_user: User = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_db),
@@ -103,9 +92,9 @@ async def get_my_preferences(
     return pref
 
 
-@router.put("/me/preferences", response_model=preference.UserPreferenceResponse)
+@router.put("/me/preferences", response_model=UserPreferenceResponse)
 async def update_my_preferences(
-    pref_in: preference.UserPreferenceUpdate,
+    pref_in: UserPreferenceUpdate,
     current_user: User = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_db),
 ) -> Any:
@@ -119,9 +108,13 @@ async def update_my_preferences(
     # Create or update
     pref = await service.get_by_user_id(current_user.id)
     if pref:
-        return await service.update_preference(current_user.id, pref_in.theme)
+        return await service.update_preference(current_user.id, pref_in)
     else:
-        return await service.create_preference(current_user.id, pref_in.theme)
+        # Construct Create model from Update model (assuming theme presence or defaults)
+        # Verify if pref_in has all needed fields for creation if not optional
+        return await service.create_preference(
+            current_user.id, UserPreferenceCreate(theme=pref_in.theme)
+        )
 
 
 @router.get("/{user_id}", response_model=UserPublic)
@@ -166,16 +159,9 @@ async def update_user(
             detail="The user doesn't have enough privileges",
         )
 
-    # Filter None values from update data
-    update_data = user_in.model_dump(exclude_unset=True)
-    if "password" in update_data:
-        from app.core.security import get_password_hash
-
-        update_data["hashed_password"] = get_password_hash(update_data.pop("password"))
-
     try:
         updated_user = await service.update_user(
-            user_id=user_id, update_data=update_data, actor_id=current_user.id
+            user_id=user_id, user_in=user_in, actor_id=current_user.id
         )
         return updated_user
     except ValueError as e:  # Entity not found or version conflict

@@ -9,10 +9,10 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
 from app.core.config import settings
+from app.core.base.base import Base
 
 # Import all models to ensure they are attached to Base.metadata
-from app.models.domain import department, user, user_preference  # noqa: F401
-from app.models.domain.base import Base
+from app.models.domain import department, project, user, user_preference  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

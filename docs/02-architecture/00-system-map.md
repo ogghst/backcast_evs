@@ -26,7 +26,7 @@ Backcast EVS is a full-stack application for project financial management.
 
 - **Framework:** React 18 + Vite
 - **Language:** TypeScript
-- **UI Library:** Ant Design 5
+- **UI Library:** Ant Design 6
 - **Data Fetching:** TanStack Query (React Query)
 - **State:** Zustand
 

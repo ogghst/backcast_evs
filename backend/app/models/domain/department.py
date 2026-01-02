@@ -11,7 +11,7 @@ from sqlalchemy import Boolean, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.core.db.base import EntityBase
+from app.core.base.base import EntityBase
 from app.models.mixins import VersionableMixin
 
 if TYPE_CHECKING:
@@ -54,7 +54,7 @@ class Department(EntityBase, VersionableMixin):
     # Relationships
     manager: Mapped["User"] = relationship(
         "app.models.domain.user.User", foreign_keys=[manager_id]
-    )  # type: ignore
+    )
 
     def __repr__(self) -> str:
         return f"<Department(id={self.id}, department_id={self.department_id}, code={self.code}, name={self.name})>"

@@ -1,19 +1,18 @@
-import pytest
 from uuid import uuid4
-from datetime import datetime, UTC
 
-from sqlalchemy import select, func
+import pytest
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.versioning.commands import (
+from app.core.branching.commands import (
     CreateBranchCommand,
-    CreateVersionCommand,
-    UpdateVersionCommand,
-    UpdateCommand, # Will be implemented
-    MergeBranchCommand, # Will be implemented
-    RevertCommand # Will be implemented
+    MergeBranchCommand,
+    RevertCommand,
+    UpdateCommand,
 )
+from app.core.versioning.commands import CreateVersionCommand
 from app.models.domain.project import Project
+
 
 class TestBranchCommands:
     """Test suite for Branchable Entity Commands."""
@@ -22,7 +21,7 @@ class TestBranchCommands:
     async def test_create_branch_command(self, db_session: AsyncSession):
         """Test creating a new branch from main."""
         root_id = uuid4()
-        
+
         # 1. Create initial version on main
         create_cmd = CreateVersionCommand(
             entity_class=Project,
@@ -62,7 +61,7 @@ class TestBranchCommands:
     async def test_update_command_on_branch(self, db_session: AsyncSession):
         """Test updating an entity on a specific branch."""
         root_id = uuid4()
-        
+
         # 1. Create v1 on feature branch
         create_cmd = CreateVersionCommand(
             entity_class=Project,
@@ -72,7 +71,7 @@ class TestBranchCommands:
             branch="feature/x"
         )
         v1 = await create_cmd.execute(db_session)
-        
+
         # 2. Update on feature branch
         v1_id = v1.id  # Capture ID before it expires
         update_cmd = UpdateCommand(
@@ -82,13 +81,13 @@ class TestBranchCommands:
             branch="feature/x"
         )
         v2 = await update_cmd.execute(db_session)
-        
+
         # Assertions
         assert v2.id != v1_id
         assert v2.name == "Updated"
         assert v2.branch == "feature/x"
         assert v2.parent_id == v1_id
-        
+
         # Verify v1 is closed on this branch
         # Note: v1 itself isn't modified in object, but DB state is.
         # We'd need to fetch history to verify closing, covered by integration tests.
@@ -117,8 +116,8 @@ class TestBranchCommands:
             new_branch="feature/merge",
             from_branch="main"
         )
-        v2 = await branch_cmd.execute(db_session)
-        
+        await branch_cmd.execute(db_session)
+
         # Update Feature (v3)
         update_cmd = UpdateCommand(
             entity_class=Project,
@@ -182,7 +181,7 @@ class TestBranchCommands:
         assert reverted.name == "V1"
         assert reverted.parent_id == v2_id # Linear history
         assert reverted.id != v1_id # New version
-    
+
     @pytest.mark.asyncio
     async def test_revert_to_specific_version(self, db_session: AsyncSession):
         """Test reverting to a specific historic version."""
@@ -198,7 +197,7 @@ class TestBranchCommands:
         update_cmd = UpdateCommand(
             entity_class=Project, root_id=root_id, updates={"name": "V2"}, branch="main"
         )
-        v2 = await update_cmd.execute(db_session)
+        await update_cmd.execute(db_session)
 
         update_cmd_2 = UpdateCommand(
             entity_class=Project, root_id=root_id, updates={"name": "V3"}, branch="main"

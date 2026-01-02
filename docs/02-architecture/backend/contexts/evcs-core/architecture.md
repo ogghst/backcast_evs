@@ -1067,7 +1067,7 @@ WHERE upper(valid_time) IS NULL
 - **Base Models:** `app/models/domain/base.py` - `EntityBase`, `SimpleEntityBase`
 - **Mixins:** `app/models/mixins.py` - `VersionableMixin`, `BranchableMixin`
 - **Commands:** `app/core/versioning/commands.py` - All command ABCs and implementations
-- **Services:** `app/core/versioning/services.py` - `SimpleService`, `TemporalService`, `BranchableService`
+- **Services:** `app/core/versioning/service.py` - `SimpleService`, `TemporalService`, `BranchableService`
 - **Entity Examples:** `app/models/domain/project.py`, `app/models/domain/wbe.py`
 
 ---

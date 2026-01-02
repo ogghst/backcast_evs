@@ -10,16 +10,17 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.versioning.commands import (
+from app.core.branching.commands import (
     CreateBranchCommand,
-    CreateVersionCommand,
     MergeBranchCommand,
     RevertCommand,
     UpdateCommand,
 )
+from app.core.versioning.commands import CreateVersionCommand
+from app.models.protocols import BranchableProtocol
 
 
-class BranchableService[TBranchable]:
+class BranchableService[TBranchable: BranchableProtocol]:
     """Service for managing branchable entities."""
 
     def __init__(self, entity_class: type[TBranchable], session: AsyncSession) -> None:
@@ -34,17 +35,6 @@ class BranchableService[TBranchable]:
         self, root_id: UUID, branch: str = "main"
     ) -> TBranchable | None:
         """Get the current active version for a root entity on a specific branch."""
-        """Get the current active version for a root entity on a specific branch."""
-        # We need _root_field_name logic here or use a standard mixin field if available.
-        # But protocols don't enforce field names for root relationship (except conceptually).
-        # We can inspect the entity class or use the command which has the logic.
-        # But commands assume we have root_id.
-        # Let's assume standard field naming or introspection.
-        # Actually, if TBranchable is used, we know it has mixin fields?
-        # Protocol defines 'branch'. Mixin defines 'root_id'? No, Mixin varies.
-        # User/Dept/Project use 'user_id', 'department_id', 'project_id' as root.
-        # We should probably adapt _root_field_name logic or require it.
-
         # Helper to get root field name
         class_name = self.entity_class.__name__.lower()
         if class_name.endswith("version"):

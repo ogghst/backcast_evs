@@ -6,6 +6,9 @@ Provides User-specific operations on top of generic temporal service.
 from typing import Any
 from uuid import UUID, uuid4
 
+from app.core.security import get_password_hash
+from app.models.schemas.user import UserRegister, UserUpdate
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,6 +19,7 @@ from app.core.versioning.commands import (
 )
 from app.core.versioning.service import TemporalService
 from app.models.domain.user import User
+
 
 
 class UserService(TemporalService[User]):  # type: ignore[type-var]
@@ -37,27 +41,36 @@ class UserService(TemporalService[User]):  # type: ignore[type-var]
 
     async def get_by_email(self, email: str) -> User | None:
         """Get user by email address (current active version)."""
-        # TODO: Use proper temporal operators when configured
-        # For now, just getting latest one that isn't deleted
+        # Uses TemporalService-like logic: valid_time @> now() AND deleted_at IS NULL
+        from typing import Any, cast
+
+        from sqlalchemy import func
+
         stmt = (
             select(User)
-            .where(User.email == email, User.deleted_at.is_(None))
-            .order_by(User.valid_time.desc())
+            .where(
+                User.email == email,
+                cast(Any, User).valid_time.op("@>")(func.current_timestamp()),
+                cast(Any, User).deleted_at.is_(None),
+            )
+            .order_by(cast(Any, User).valid_time.desc())
             .limit(1)
         )
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def create_user(self, user_data: dict[str, Any], actor_id: UUID) -> User:
-        """Create new user using CreateVersionCommand."""
-        # Ensure root user_id exists
-        root_id = user_data.get("user_id")
-        if not root_id:
-            root_id = uuid4()
-            user_data["user_id"] = root_id
+    async def create_user(self, user_in: UserRegister, actor_id: UUID) -> User:
+        """Create new user using CreateVersionCommand with Pydantic validation."""
+        user_data = user_in.model_dump()
 
-        # Ideally, we should validate user_data against Pydantic schema here
-        # For now, we assume it matches User model fields
+        # Handle password hashing
+        password = user_data.pop("password")
+        user_data["hashed_password"] = get_password_hash(password)
+
+        # Ensure root user_id exists (though normally not in register input,
+        # but could be generated here if needed for CreateVersionCommand)
+        root_id = uuid4()
+        user_data["user_id"] = root_id
 
         cmd = CreateVersionCommand(
             entity_class=User,  # type: ignore[type-var]
@@ -67,9 +80,22 @@ class UserService(TemporalService[User]):  # type: ignore[type-var]
         return await cmd.execute(self.session)
 
     async def update_user(
-        self, user_id: UUID, update_data: dict[str, Any], actor_id: UUID
+        self, user_id: UUID, user_in: UserUpdate, actor_id: UUID
     ) -> User:
-        """Update user using UpdateVersionCommand (creates new version)."""
+        """Update user using UpdateVersionCommand with Pydantic validation."""
+        # Filter None values from update data
+        update_data = user_in.model_dump(exclude_unset=True)
+
+        if "password" in update_data:
+            password = update_data.pop("password")
+            update_data["hashed_password"] = get_password_hash(password)
+
+        # If no changes remaining (e.g. empty update), we might still want to
+        # create a new version if that's the semantic, or just return current.
+        # But UpdateVersionCommand usually expects something.
+        # However, purely strictly speaking, if nothing to update, we pass it down
+        # and let the command decide or just do it.
+
         cmd = UpdateVersionCommand(
             entity_class=User,  # type: ignore[type-var]
             root_id=user_id,

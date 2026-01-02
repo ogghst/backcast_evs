@@ -10,7 +10,7 @@ from uuid import UUID
 from sqlalchemy import Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.db.base import EntityBase
+from app.core.base.base import EntityBase
 from app.models.mixins import BranchableMixin, VersionableMixin
 
 

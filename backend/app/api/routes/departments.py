@@ -43,7 +43,6 @@ async def read_departments(
     """Retrieve departments."""
     return await service.get_departments(skip=skip, limit=limit)
 
-
 @router.post("", response_model=DepartmentPublic, status_code=status.HTTP_201_CREATED)
 async def create_department(
     dept_in: DepartmentCreate,
@@ -55,7 +54,7 @@ async def create_department(
 
     try:
         dept = await service.create_department(
-            dept_data=dept_in.model_dump(), actor_id=current_user.id
+            dept_in=dept_in, actor_id=current_user.id
         )
         return dept
     except ValueError as e:
@@ -94,7 +93,7 @@ async def update_department(
     try:
         updated_dept = await service.update_department(
             department_id=department_id,
-            update_data=dept_in.model_dump(exclude_unset=True),
+            dept_in=dept_in,
             actor_id=current_user.id,
         )
         return updated_dept
