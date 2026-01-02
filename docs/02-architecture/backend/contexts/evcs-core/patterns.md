@@ -1,7 +1,10 @@
 # Temporal Patterns Reference
 
-**Last Updated:** 2026-01-01  
+**Last Updated:** 2026-01-02  
 **Context:** [EVCS Core Architecture](architecture.md)
+
+> [!NOTE]
+> This document provides patterns for working with EVCS entities. All entities follow a Protocol-based architecture with three tiers: `SimpleEntityProtocol` (non-versioned), `VersionableProtocol` (temporal), and `BranchableProtocol` (full EVCS with branching). See [EVCS Core Architecture](architecture.md) for complete type system details.
 
 This document provides query patterns and recipes for working with the bitemporal versioning system.
 
@@ -434,7 +437,7 @@ projects = session.execute(stmt).scalars().all()
 
 ## Non-Versioned Entity Patterns
 
-For entities that don't require temporal versioning (preferences, configuration), use the simplified `SimpleBase` and `SimpleService` patterns.
+For entities that don't require temporal versioning (preferences, configuration), use `SimpleEntityBase` and `SimpleService[T]` patterns.
 
 ### Basic CRUD Pattern
 
@@ -457,22 +460,21 @@ class UserPreferencesService(SimpleService[UserPreferences]):
         return self.create(user_id=user_id, **prefs)
 ```
 
-### Key Differences from Versioned Entities
+### Service Comparison by Entity Type
 
-| Operation  | Versioned (TemporalService)       | Non-Versioned (SimpleService) |
-| ---------- | --------------------------------- | ----------------------------- |
-| **Create** | Creates version + sets valid_time | Simple INSERT                 |
-| **Update** | Closes old version, creates new   | UPDATE in place               |
-| **Delete** | Sets deleted_at (soft)            | DELETE row (hard)             |
-| **Read**   | Filters by valid_time + branch    | Simple SELECT by ID           |
+| Entity Type       | Protocol               | Service                | Create               | Update                  | Delete      | Read                          |
+| ----------------- | ---------------------- | ---------------------- | -------------------- | ----------------------- | ----------- | ----------------------------- |
+| **Non-versioned** | `SimpleEntityProtocol` | `SimpleService[T]`     | INSERT               | UPDATE in place         | Hard DELETE | SELECT by ID                  |
+| **Versioned**     | `VersionableProtocol`  | `Temporal Service[T]`  | Version + valid_time | Close old + create new  | Soft delete | Filter by valid_time          |
+| **Branchable**    | `BranchableProtocol`   | `BranchableService[T]` | Version + branch     | Close + clone on branch | Soft delete | Filter by valid_time + branch |
 
 > [!NOTE]
-> For complete examples, see [Non-Versioned Entities](architecture.md#non-versioned-entities) in architecture.md.
+> For complete type system details including Protocols and ABCs, see [Type System](architecture.md#type-system) in architecture.md.
 
 ---
 
 ## See Also
 
 - [EVCS Core Architecture](architecture.md)
-- [Database Strategy](../../cross-cutting/database-strategy.md)
+- [Database Strategy](../../../cross-cutting/database-strategy.md)
 - [ADR-005: Bitemporal Versioning](../../decisions/ADR-005-bitemporal-versioning.md)

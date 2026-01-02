@@ -1,6 +1,6 @@
 # ADR Index
 
-**Last Updated:** 2026-01-01
+**Last Updated:** 2026-01-02
 
 This index lists all Architecture Decision Records (ADRs) in chronological order.
 
@@ -28,6 +28,13 @@ This index lists all Architecture Decision Records (ADRs) in chronological order
 **Status:** ✅ Accepted  
 **Summary:** Single-table bitemporal versioning with PostgreSQL TSTZRANGE, generic commands/services  
 **Link:** [ADR-005](ADR-005-bitemporal-versioning.md)
+
+### ADR-006: Protocol-Based Type System
+
+**Date:** 2026-01-02  
+**Status:** ✅ Accepted  
+**Summary:** Three-tier Protocol hierarchy (Simple, Versionable, Branchable) with bound TypeVars for type-safe generic components  
+**Link:** [ADR-006](ADR-006-protocol-based-type-system.md)
 
 ### ADR-003: Command Pattern for Write Operations
 
