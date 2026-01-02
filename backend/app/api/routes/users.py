@@ -9,7 +9,7 @@ from app.api.dependencies.auth import get_current_active_user, get_user_service
 from app.db.session import get_db
 from app.models.domain.user import User
 from app.models.schemas.user import UserPublic, UserRegister, UserUpdate
-from app.schemas.preference import (
+from app.models.schemas.preference import (
     UserPreferenceCreate,
     UserPreferenceResponse,
     UserPreferenceUpdate,
@@ -19,7 +19,7 @@ from app.services.user import UserService
 router = APIRouter()
 
 
-@router.get("", response_model=list[UserPublic])
+@router.get("", response_model=list[UserPublic], operation_id="get_users")
 async def read_users(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=100),
@@ -39,7 +39,12 @@ async def read_users(
     return await service.get_users(skip=skip, limit=limit)
 
 
-@router.post("", response_model=UserPublic, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=UserPublic,
+    status_code=status.HTTP_201_CREATED,
+    operation_id="create_user",
+)
 async def create_user(
     user_in: UserRegister,
     current_user: User = Depends(get_current_active_user),
@@ -56,7 +61,7 @@ async def create_user(
         )
 
     try:
-    try:
+
         # Pass Pydantic model directly to service
         # Service handles hashing and dictionary conversion
         user = await service.create_user(user_in=user_in, actor_id=current_user.id)
@@ -68,7 +73,7 @@ async def create_user(
         ) from e
 
 
-@router.get("/me/preferences", response_model=UserPreferenceResponse)
+@router.get("/me/preferences", response_model=UserPreferenceResponse, operation_id="get_my_preferences")
 async def get_my_preferences(
     current_user: User = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_db),
@@ -92,7 +97,7 @@ async def get_my_preferences(
     return pref
 
 
-@router.put("/me/preferences", response_model=UserPreferenceResponse)
+@router.put("/me/preferences", response_model=UserPreferenceResponse, operation_id="update_my_preferences")
 async def update_my_preferences(
     pref_in: UserPreferenceUpdate,
     current_user: User = Depends(get_current_active_user),
@@ -117,7 +122,7 @@ async def update_my_preferences(
         )
 
 
-@router.get("/{user_id}", response_model=UserPublic)
+@router.get("/{user_id}", response_model=UserPublic, operation_id="get_user")
 async def read_user(
     user_id: UUID,  # This fetches by version ID (PK)
     current_user: User = Depends(get_current_active_user),
@@ -142,7 +147,7 @@ async def read_user(
     return user
 
 
-@router.put("/{user_id}", response_model=UserPublic)
+@router.put("/{user_id}", response_model=UserPublic, operation_id="update_user")
 async def update_user(
     user_id: UUID,
     user_in: UserUpdate,
@@ -171,7 +176,7 @@ async def update_user(
         ) from e
 
 
-@router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT, operation_id="delete_user")
 async def delete_user(
     user_id: UUID,
     current_user: User = Depends(get_current_active_user),

@@ -7,13 +7,18 @@ import { useAuthStore } from "@/stores/useAuthStore";
 // Mock the auth store
 vi.mock("@/stores/useAuthStore");
 
+interface LocationState {
+  from?: string;
+}
+
 // Helper component to display current location state
 const LocationDisplay = () => {
   const location = useLocation();
+  const state = location.state as LocationState;
   return (
     <div>
       <div data-testid="pathname">{location.pathname}</div>
-      <div data-testid="state-from">{(location.state as any)?.from}</div>
+      <div data-testid="state-from">{state?.from}</div>
     </div>
   );
 };
@@ -25,6 +30,7 @@ describe("ProtectedRoute", () => {
 
   it("should redirect to login when not authenticated", () => {
     // Mock user as not authenticated
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vi.mocked(useAuthStore).mockReturnValue({ isAuthenticated: false } as any);
 
     render(
@@ -46,13 +52,16 @@ describe("ProtectedRoute", () => {
     // Should redirect to login
     expect(screen.getByTestId("pathname")).toHaveTextContent("/login");
     // Should preserve the original location in state
-    expect(screen.getByTestId("state-from")).toHaveTextContent("/testing-protected");
+    expect(screen.getByTestId("state-from")).toHaveTextContent(
+      "/testing-protected"
+    );
     // Should not show protected content
     expect(screen.queryByText("Protected Content")).not.toBeInTheDocument();
   });
 
   it("should render children when authenticated", () => {
     // Mock user as authenticated
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vi.mocked(useAuthStore).mockReturnValue({ isAuthenticated: true } as any);
 
     render(

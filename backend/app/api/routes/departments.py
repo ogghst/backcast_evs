@@ -33,7 +33,7 @@ def check_admin(current_user: User) -> None:
         )
 
 
-@router.get("", response_model=list[DepartmentPublic])
+@router.get("", response_model=list[DepartmentPublic], operation_id="get_departments")
 async def read_departments(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=100),
@@ -43,7 +43,12 @@ async def read_departments(
     """Retrieve departments."""
     return await service.get_departments(skip=skip, limit=limit)
 
-@router.post("", response_model=DepartmentPublic, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=DepartmentPublic,
+    status_code=status.HTTP_201_CREATED,
+    operation_id="create_department",
+)
 async def create_department(
     dept_in: DepartmentCreate,
     current_user: User = Depends(get_current_active_user),
@@ -64,7 +69,7 @@ async def create_department(
         ) from e
 
 
-@router.get("/{department_id}", response_model=DepartmentPublic)
+@router.get("/{department_id}", response_model=DepartmentPublic, operation_id="get_department")
 async def read_department(
     department_id: UUID,
     current_user: User = Depends(get_current_active_user),
@@ -80,7 +85,7 @@ async def read_department(
     return dept
 
 
-@router.put("/{department_id}", response_model=DepartmentPublic)
+@router.put("/{department_id}", response_model=DepartmentPublic, operation_id="update_department")
 async def update_department(
     department_id: UUID,
     dept_in: DepartmentUpdate,
@@ -101,7 +106,7 @@ async def update_department(
         raise HTTPException(status_code=404, detail=str(e)) from e
 
 
-@router.delete("/{department_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{department_id}", status_code=status.HTTP_204_NO_CONTENT, operation_id="delete_department")
 async def delete_department(
     department_id: UUID,
     current_user: User = Depends(get_current_active_user),

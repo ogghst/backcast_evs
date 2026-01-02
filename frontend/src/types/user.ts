@@ -1,10 +1,14 @@
 // User Management Types
 
 // Status for filtering
-export type UserStatus = 'active' | 'inactive';
+export type UserStatus = "active" | "inactive";
 
 // Role definitions
-export type UserRole = 'admin' | 'project_manager' | 'department_manager' | 'viewer';
+export type UserRole =
+  | "admin"
+  | "project_manager"
+  | "department_manager"
+  | "viewer";
 
 // Base User Interface (matching backend UserPublic)
 export interface User {
@@ -14,7 +18,7 @@ export interface User {
   is_active: boolean;
   is_superuser: boolean;
   role: UserRole;
-  department_id?: string | null; // For Department Managers
+  department?: string | null; // Department Name/Code
   created_at: string;
   updated_at?: string;
 }
@@ -25,7 +29,7 @@ export interface CreateUserPayload {
   full_name: string;
   password: string;
   role: UserRole;
-  department_id?: string | null;
+  department?: string | null;
   is_active?: boolean;
   is_superuser?: boolean;
 }
@@ -36,7 +40,7 @@ export interface UpdateUserPayload {
   full_name?: string;
   password?: string;
   role?: UserRole;
-  department_id?: string | null;
+  department?: string | null;
   is_active?: boolean;
   is_superuser?: boolean;
 }

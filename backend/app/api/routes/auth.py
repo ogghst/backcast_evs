@@ -15,7 +15,10 @@ router = APIRouter(prefix="/auth", tags=["authentication"])
 
 
 @router.post(
-    "/register", response_model=UserPublic, status_code=status.HTTP_201_CREATED
+    "/register",
+    response_model=UserPublic,
+    status_code=status.HTTP_201_CREATED,
+    operation_id="register",
 )
 async def register(
     user_in: UserRegister,
@@ -53,7 +56,7 @@ async def register(
         ) from e
 
 
-@router.post("/login", response_model=Token)
+@router.post("/login", response_model=Token, operation_id="login")
 async def login(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     session: Annotated[AsyncSession, Depends(get_db)],
@@ -79,7 +82,7 @@ async def login(
     return token
 
 
-@router.get("/me", response_model=UserPublic)
+@router.get("/me", response_model=UserPublic, operation_id="get_current_user")
 async def read_users_me(
     current_user: Annotated[User, Depends(get_current_active_user)],
 ) -> Any:

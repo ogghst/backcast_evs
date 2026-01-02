@@ -1,8 +1,16 @@
 import axios from "axios";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { OpenAPI } from "./generated";
 
 // Base API URL should come from environment variables
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
+
+// Configure generated client
+OpenAPI.BASE = API_URL;
+OpenAPI.TOKEN = async () => {
+  const token = useAuthStore.getState().token;
+  return token || "";
+};
 
 export const apiClient = axios.create({
   baseURL: API_URL,
@@ -34,7 +42,7 @@ apiClient.interceptors.response.use(
       // Token expired or invalid - logout and redirect to login
       const { logout } = useAuthStore.getState();
       logout();
-      
+
       // Only redirect if not already on login page
       if (window.location.pathname !== "/login") {
         window.location.href = "/login";

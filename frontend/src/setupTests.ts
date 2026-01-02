@@ -3,7 +3,7 @@ import "@testing-library/jest-dom";
 // Mock matchMedia for Ant Design
 Object.defineProperty(window, "matchMedia", {
   writable: true,
-  value: (query: any) => ({
+  value: (query: string) => ({
     matches: false,
     media: query,
     onchange: null,
@@ -24,4 +24,3 @@ const ResizeObserverMock = class ResizeObserver {
 
 window.ResizeObserver = ResizeObserverMock;
 global.ResizeObserver = ResizeObserverMock;
-

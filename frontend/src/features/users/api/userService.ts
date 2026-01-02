@@ -1,35 +1,36 @@
-import apiClient from '@/api';
-import { 
-  User, 
-  UserFilters, 
-  CreateUserPayload, 
-  UpdateUserPayload 
-} from '@/types/user';
+import { UsersService } from "@/api/generated";
+import {
+  User,
+  UserFilters,
+  CreateUserPayload,
+  UpdateUserPayload,
+} from "@/types/user";
 
 export const UserService = {
   getUsers: async (filters: UserFilters = {}): Promise<User[]> => {
     // Map filters to backend params
-    const params = {
-      skip: filters.page && filters.per_page ? (filters.page - 1) * filters.per_page : 0,
-      limit: filters.per_page || 100,
-      search: filters.search
-    };
+    const skip =
+      filters.page && filters.per_page
+        ? (filters.page - 1) * filters.per_page
+        : 0;
+    const limit = filters.per_page || 100;
 
-    const response = await apiClient.get<User[]>('/users', { params });
-    return response.data;
+    // Note: Search param is not yet implemented in backend
+    const users = await UsersService.getUsers(skip, limit);
+    return users as unknown as User[];
   },
 
   createUser: async (data: CreateUserPayload): Promise<User> => {
-    const response = await apiClient.post<User>('/users', data);
-    return response.data;
+    const user = await UsersService.createUser(data);
+    return user as unknown as User;
   },
 
   updateUser: async (id: string, data: UpdateUserPayload): Promise<User> => {
-    const response = await apiClient.put<User>(`/users/${id}`, data);
-    return response.data;
+    const user = await UsersService.updateUser(id, data);
+    return user as unknown as User;
   },
 
   deleteUser: async (id: string): Promise<void> => {
-    await apiClient.delete(`/users/${id}`);
-  }
+    await UsersService.deleteUser(id);
+  },
 };
