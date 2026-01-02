@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Button, Space, Tag, App } from 'antd';
+import { Button, Space, Tag, App, Tooltip } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useUserStore } from '@/stores/useUserStore';
 import { DataTable } from '@/components/DataTable';
@@ -60,18 +60,24 @@ export const UserList = () => {
       key: 'actions',
       render: (_: unknown, record: User) => (
         <Space>
-          <Button 
-            icon={<EditOutlined />} 
-            onClick={() => {
-              setSelectedUser(record);
-              setModalOpen(true);
-            }}
-          />
-          <Button 
-            danger 
-            icon={<DeleteOutlined />} 
-            onClick={() => handleDelete(record.id)} 
-          />
+          <Tooltip title="Edit user">
+            <Button
+              aria-label="Edit user"
+              icon={<EditOutlined />}
+              onClick={() => {
+                setSelectedUser(record);
+                setModalOpen(true);
+              }}
+            />
+          </Tooltip>
+          <Tooltip title="Delete user">
+            <Button
+              aria-label="Delete user"
+              danger
+              icon={<DeleteOutlined />}
+              onClick={() => handleDelete(record.id)}
+            />
+          </Tooltip>
         </Space>
       ),
     },
