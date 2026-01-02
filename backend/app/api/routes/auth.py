@@ -4,11 +4,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies.auth import get_current_active_user
+from app.api.dependencies.auth import get_current_active_user, get_user_service
 from app.db.session import get_db
 from app.models.domain.user import User
-from app.models.schemas.user import Token, UserLogin, UserPublic, UserRegister
+from app.models.schemas.user import Token, UserPublic, UserRegister
 from app.services.auth import AuthService
+from app.services.user import UserService
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
@@ -18,23 +19,40 @@ router = APIRouter(prefix="/auth", tags=["authentication"])
 )
 async def register(
     user_in: UserRegister,
-    session: Annotated[AsyncSession, Depends(get_db)],
+    service: UserService = Depends(get_user_service),
 ) -> Any:
     """
     Register a new user.
     """
-    auth_service = AuthService(session)
     try:
-        user = await auth_service.register_user(user_in)
-        # We need to construct UserPublic from User + UserVersion
-        # Since our User model doesn't flattened fields directly mapping to UserPublic
-        # (UserPublic has full_name, is_active etc, which are on UserVersion)
+        # Check existing
+        existing = await service.get_by_email(user_in.email)
+        if existing:
+            raise HTTPException(
+                status_code=400,
+                detail="The user with this user name already exists in the system.",
+            )
 
-        # We manually map it here or rely on Pydantic's from_attributes if the User object
-        # has these attributes/properties proxying to the latest version.
+        # Pydantic -> Dict
+        user_data = user_in.model_dump()
 
-        # Manually mapping for safety given the complexity of EVCS:
-        return UserPublic.from_entity(user)
+        # Hash password
+        from app.core.security import get_password_hash
+
+        user_data["hashed_password"] = get_password_hash(user_data.pop("password"))
+
+        # Create
+        # Note: UserService.create_user expects actor_id. For registration,
+        # either we use a system actor or the user acts as themselves (bootstrap).
+        # We'll use a nil UUID or handle in service.
+        # But 'actor_id' is mandatory in our current signature.
+        from uuid import UUID
+
+        system_actor = UUID("00000000-0000-0000-0000-000000000000")
+
+        user = await service.create_user(user_data=user_data, actor_id=system_actor)
+
+        return user
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -52,7 +70,7 @@ async def login(
     """
     auth_service = AuthService(session)
     user = await auth_service.authenticate_user(
-        UserLogin(email=form_data.username, password=form_data.password)
+        email=form_data.username, password=form_data.password
     )
     if not user:
         raise HTTPException(
@@ -60,9 +78,12 @@ async def login(
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    if not user.is_active:
+        raise HTTPException(status_code=400, detail="Inactive user")
 
-    access_token = auth_service.create_token(user)
-    return Token(access_token=access_token, token_type="bearer")
+    # Access Token
+    token = await auth_service.create_access_token_for_user(user)
+    return token
 
 
 @router.get("/me", response_model=UserPublic)
@@ -72,5 +93,4 @@ async def read_users_me(
     """
     Get current user.
     """
-    # Map to schema
-    return UserPublic.from_entity(current_user)
+    return current_user

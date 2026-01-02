@@ -5,7 +5,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 if TYPE_CHECKING:
-    from app.models.domain.department import Department
+    pass
 
 
 class DepartmentBase(BaseModel):
@@ -29,23 +29,17 @@ class DepartmentUpdate(BaseModel):
     is_active: bool | None = None
 
 
-class DepartmentPublic(DepartmentBase):
+class DepartmentRead(DepartmentBase):
+    """Schema for reading department data."""
+
     id: UUID
+    department_id: UUID
     code: str
-    created_at: datetime | None = None
+    is_active: bool
+    created_at: datetime | None = None  # For temporal compatibility
 
     model_config = ConfigDict(from_attributes=True)
 
-    @classmethod
-    def from_entity(cls, department: "Department") -> "DepartmentPublic":
-        if not department.versions:
-            raise ValueError("Department has no versions")
-        latest = department.versions[0]
-        return cls(
-            id=department.id,
-            code=department.code,
-            name=latest.name,
-            manager_id=latest.manager_id,
-            is_active=latest.is_active,
-            created_at=latest.valid_from,
-        )
+
+# Alias for backward compatibility
+DepartmentPublic = DepartmentRead

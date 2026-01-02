@@ -1,75 +1,43 @@
-from datetime import UTC, date, datetime
-from uuid import UUID, uuid4
+"""UserPreferenceService implementation.
 
+Provides UserPreference-specific operations on top of generic simple service.
+"""
+
+from uuid import UUID
+
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.commands.user_preference import UpdateUserPreferenceCommand
-from app.core.versioning.commands import CommandMetadata
-from app.models.domain.user import User
-from app.models.domain.user_preference import UserPreference, UserPreferenceVersion
-from app.repositories.user_preference import UserPreferenceRepository
+from app.core.simple.service import SimpleService
+from app.models.domain.user_preference import UserPreference
 
 
-class UserPreferenceService:
-    def __init__(self, session: AsyncSession):
-        self.session = session
-        self.repo = UserPreferenceRepository(session)
+class UserPreferenceService(SimpleService[UserPreference]):  # type: ignore[type-var]
+    """Service for UserPreference entity operations."""
 
-    async def get_my_preference(self, user: User) -> UserPreferenceVersion:
-        """
-        Get preference for a user. If not exists, create default.
-        """
-        pref = await self.repo.get_by_user_id(user.id)
-        
+    def __init__(self, session: AsyncSession) -> None:
+        super().__init__(session, UserPreference)
+
+    async def get_by_user_id(self, user_id: UUID) -> UserPreference | None:
+        """Get preference by user ID."""
+        stmt = select(UserPreference).where(UserPreference.user_id == user_id).limit(1)
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def create_preference(
+        self, user_id: UUID, theme: str = "light"
+    ) -> UserPreference:
+        """Create new user preference."""
+        # Check if exists? schema has unique constraint on user_id
+        return await self.create(user_id=user_id, theme=theme)
+
+    async def update_preference(self, user_id: UUID, theme: str) -> UserPreference:
+        """Update preference for user."""
+        pref = await self.get_by_user_id(user_id)
         if not pref:
-            # Create default preference (Initialization logic)
-            # This is technical initialization, not necessarily a "Command" in business sense,
-            # but for strictness we could use one. For now, simple init like in User creation.
-            pref_id = UUID(int=uuid4().int)
-            new_pref = UserPreference(id=pref_id, user_id=user.id)
-            new_version = UserPreferenceVersion(
-                head_id=pref_id,
-                valid_from=date.today(),
-                created_by_id=user.id,
-                theme="light"
-            )
-            self.session.add(new_pref)
-            self.session.add(new_version)
-            await self.session.flush() # Ensure ID availability
-            await self.session.commit()
-            
-            # Fetch again to ensure everything is loaded correctly via repo
-            pref = await self.repo.get_by_user_id(user.id)
-        
-        if not pref or not pref.versions:
-             # Should not happen after init
-             raise ValueError("Preference versions not found")
-             
-        return pref.versions[0]
+            # Create if not exists? Or raise?
+            # For now, let's auto-create if missing, or raise?
+            # Let's assume strict update.
+            raise ValueError(f"Preferences not found for user {user_id}")
 
-    async def update_my_preference(
-        self, user: User, theme: str
-    ) -> UserPreferenceVersion:
-        """
-        Update user preference using Command.
-        """
-        # Ensure existence first and get current version
-        current_version = await self.get_my_preference(user)
-        
-        if current_version.theme == theme:
-            return current_version
-
-        metadata = CommandMetadata(
-            command_type="UPDATE_USER_PREFERENCE",
-            user_id=user.id,
-            timestamp=datetime.now(UTC),
-            description="Update Theme Preference",
-        )
-        
-        command = UpdateUserPreferenceCommand(
-            metadata=metadata,
-            head_id=current_version.head_id,
-            theme=theme
-        )
-        
-        return await command.execute(self.session)
+        return await self.update(pref.id, theme=theme)

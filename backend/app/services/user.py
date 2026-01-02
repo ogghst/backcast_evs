@@ -1,117 +1,86 @@
-from collections.abc import Sequence
-from datetime import UTC, datetime
+"""UserService extending TemporalService.
+
+Provides User-specific operations on top of generic temporal service.
+"""
+
+from typing import Any
 from uuid import UUID, uuid4
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.commands.user import CreateUserCommand, DeleteUserCommand, UpdateUserCommand
-from app.core.security import get_password_hash
-from app.core.versioning.commands import CommandMetadata
-from app.models.domain.user import User, UserVersion
-from app.models.schemas.user import UserRegister, UserUpdate
-from app.repositories.user import UserRepository
+from app.core.versioning.commands import (
+    CreateVersionCommand,
+    SoftDeleteCommand,
+    UpdateVersionCommand,
+)
+from app.core.versioning.service import TemporalService
+from app.models.domain.user import User
 
 
-class UserService:
-    def __init__(self, session: AsyncSession):
-        self.session = session
-        self.user_repo = UserRepository(session)
+class UserService(TemporalService[User]):  # type: ignore[type-var]
+    """Service for User entity operations.
+
+    Extends TemporalService with user-specific methods like get_by_email.
+    """
+
+    def __init__(self, session: AsyncSession) -> None:
+        super().__init__(User, session)
 
     async def get_user(self, user_id: UUID) -> User | None:
-        """Get user by ID."""
-        return await self.user_repo.get_by_id(user_id)
+        """Get user by ID (current version)."""
+        return await self.get_by_id(user_id)
 
-    async def get_users(self, skip: int = 0, limit: int = 100) -> Sequence[User]:
+    async def get_users(self, skip: int = 0, limit: int = 100) -> list[User]:
         """Get all users with pagination."""
-        return await self.user_repo.get_all(skip=skip, limit=limit)
+        return await self.get_all(skip, limit)
+
+    async def get_by_email(self, email: str) -> User | None:
+        """Get user by email address (current active version)."""
+        # TODO: Use proper temporal operators when configured
+        # For now, just getting latest one that isn't deleted
+        stmt = (
+            select(User)
+            .where(User.email == email, User.deleted_at.is_(None))
+            .order_by(User.valid_time.desc())
+            .limit(1)
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def create_user(self, user_data: dict[str, Any], actor_id: UUID) -> User:
+        """Create new user using CreateVersionCommand."""
+        # Ensure root user_id exists
+        root_id = user_data.get("user_id")
+        if not root_id:
+            root_id = uuid4()
+            user_data["user_id"] = root_id
+
+        # Ideally, we should validate user_data against Pydantic schema here
+        # For now, we assume it matches User model fields
+
+        cmd = CreateVersionCommand(
+            entity_class=User,  # type: ignore[type-var]
+            root_id=root_id,
+            **user_data,
+        )
+        return await cmd.execute(self.session)
 
     async def update_user(
-        self, user_id: UUID, update_data: UserUpdate, actor_id: UUID
-    ) -> UserVersion:
-        """
-        Update user profile and/or password.
-        Profile changes are versioned via UpdateUserCommand.
-        Password changes update the Head entity directly (no history for security/simplicity).
-        """
-        # 1. Handle Password Update (Head Entity)
-        if update_data.password:
-            user = await self.user_repo.get_by_id(user_id)
-            if not user:
-                raise ValueError("User not found")
-
-            hashed_password = get_password_hash(update_data.password)
-            user.hashed_password = hashed_password
-            self.session.add(user)
-            # We don't flush here, wait for command execution to flush all
-
-        # 2. Handle Profile Update (Version Entity)
-        # Filter out None values and password
-        changes = update_data.model_dump(exclude_unset=True)
-        if "password" in changes:
-            del changes["password"]
-
-        if not changes:
-            # If only password was updated, we need to return the current version
-            # or maybe just flush user update.
-            # But the return type implies returning a specific version.
-            # Let's get the current active version to return.
-            user = await self.user_repo.get_by_id(user_id)
-            if not user or not user.versions:
-                raise ValueError("User or version not found")
-
-            # Since we modified the session (password), we should flush
-            await self.session.flush()
-            return user.versions[0]  # Return generic latest version
-
-        metadata = CommandMetadata(
-            command_type="UPDATE_USER",
-            user_id=actor_id,
-            timestamp=datetime.now(UTC),
-            description="User Update",
+        self, user_id: UUID, update_data: dict[str, Any], actor_id: UUID
+    ) -> User:
+        """Update user using UpdateVersionCommand (creates new version)."""
+        cmd = UpdateVersionCommand(
+            entity_class=User,  # type: ignore[type-var]
+            root_id=user_id,
+            **update_data,
         )
-
-        command = UpdateUserCommand(metadata=metadata, user_id=user_id, changes=changes)
-        return await command.execute(self.session)
+        return await cmd.execute(self.session)
 
     async def delete_user(self, user_id: UUID, actor_id: UUID) -> None:
-        """
-        Soft delete user.
-        """
-        metadata = CommandMetadata(
-            command_type="DELETE_USER",
-            user_id=actor_id,
-            timestamp=datetime.now(UTC),
-            description="User Soft Delete",
+        """Soft delete user using SoftDeleteCommand."""
+        cmd = SoftDeleteCommand(
+            entity_class=User,  # type: ignore[type-var]
+            root_id=user_id,
         )
-
-        command = DeleteUserCommand(metadata=metadata, user_id=user_id)
-        await command.execute(self.session)
-
-    async def create_user(self, user_data: UserRegister, actor_id: UUID) -> User:
-        """
-        Create a new user.
-        """
-        existing_user = await self.user_repo.get_by_email(user_data.email)
-        if existing_user:
-            raise ValueError("Email already registered")
-
-        new_user_id = UUID(int=uuid4().int)  # Ensure standard UUID generation
-
-        metadata = CommandMetadata(
-            command_type="CREATE_USER",
-            user_id=actor_id,
-            timestamp=datetime.now(UTC),
-            description=f"Admin created user: {user_data.email}",
-        )
-
-        command = CreateUserCommand(
-            metadata=metadata,
-            email=user_data.email,
-            hashed_password=get_password_hash(user_data.password),
-            full_name=user_data.full_name,
-            role=user_data.role,
-            department=user_data.department,
-            id=new_user_id,
-        )
-
-        return await command.execute(self.session)
+        await cmd.execute(self.session)

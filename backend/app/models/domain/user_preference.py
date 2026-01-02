@@ -1,81 +1,37 @@
-"""
-User Preference domain models.
+"""User preference domain model.
 
-Stores user-specific settings like UI theme.
-Follows the Head/Version pattern but simplified (similar to User) since it's
-associated directly with a user and doesn't participate in general project branching.
+Simple (non-versioned) entity storing user UI preferences.
+Satisfies SimpleEntityProtocol.
 """
 
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, String
-from sqlalchemy.dialects.postgresql import UUID as SQLUUID
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.domain.base import Base
-from app.models.mixins.versionable import BaseHeadMixin, BaseVersionMixin
+from app.core.db.base import SimpleEntityBase
 
 
-class UserPreference(BaseHeadMixin, Base):
+class UserPreference(SimpleEntityBase):
+    """User preferences - non-versioned, mutable.
+
+    Stores:
+    - theme: UI theme (light/dark)
+    - (future: locale, timezone, etc.)
+
+    Satisfies: SimpleEntityProtocol
     """
-    UserPreference head table.
-    
-    Links preferences to a specific User.
-    One-to-One relationship with User (or effectively so, logic enforced).
-    """
 
-    __tablename__ = "user_preference"
+    __tablename__ = "user_preferences"
 
-    # Link to the user who owns these preferences
     user_id: Mapped[UUID] = mapped_column(
-        SQLUUID,
-        ForeignKey("user.id", ondelete="CASCADE"),
-        unique=True,
-        nullable=False,
-        index=True
+        PG_UUID, ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False
     )
+    theme: Mapped[str] = mapped_column(String(20), default="light")
 
-    # Relationship to user
-    user: Mapped["User"] = relationship("User", back_populates="preference")
-
-    # Relationship to versions
-    versions: Mapped[list["UserPreferenceVersion"]] = relationship(
-        "UserPreferenceVersion",
-        back_populates="preference",
-        primaryjoin="UserPreference.id == UserPreferenceVersion.head_id",
-        order_by="desc(UserPreferenceVersion.valid_from)",
-        lazy="selectin",
-    )
+    # Relationships (commented out to avoid circular dependency during TDD)
+    # user: Mapped["User"] = relationship("User", back_populates="preference")  # type: ignore
 
     def __repr__(self) -> str:
-        return f"<UserPreference(id={self.id}, user_id={self.user_id})>"
-
-
-class UserPreferenceVersion(BaseVersionMixin, Base):
-    """
-    UserPreference version table.
-    
-    Stores the actual preference values with history.
-    """
-
-    __tablename__ = "user_preference_version"
-
-    # Override head_id
-    head_id: Mapped[UUID] = mapped_column(
-        SQLUUID,
-        ForeignKey("user_preference.id", ondelete="CASCADE"),
-        primary_key=True,
-        index=True,
-    )
-
-    # Preference fields
-    theme: Mapped[str] = mapped_column(String(50), nullable=False, default="light")
-
-    # Relationship back to head
-    preference: Mapped["UserPreference"] = relationship(
-        "UserPreference",
-        back_populates="versions",
-    )
-
-    def __repr__(self) -> str:
-        return f"<UserPreferenceVersion(head_id={self.head_id}, theme={self.theme})>"
+        return f"<UserPreference(id={self.id}, user_id={self.user_id}, theme={self.theme})>"

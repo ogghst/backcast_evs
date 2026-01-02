@@ -1,97 +1,85 @@
-from collections.abc import Sequence
-from datetime import UTC, datetime
+"""DepartmentService implementation.
+
+Provides Department-specific operations on top of generic temporal service.
+"""
+
+from typing import Any
 from uuid import UUID, uuid4
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.commands.department import (
-    CreateDepartmentCommand,
-    DeleteDepartmentCommand,
-    UpdateDepartmentCommand,
+from app.core.versioning.commands import (
+    CreateVersionCommand,
+    SoftDeleteCommand,
+    UpdateVersionCommand,
 )
-from app.core.versioning.commands import CommandMetadata
-from app.models.domain.department import Department, DepartmentVersion
-from app.models.schemas.department import DepartmentCreate, DepartmentUpdate
-from app.repositories.department import DepartmentRepository
+from app.core.versioning.service import TemporalService
+from app.models.domain.department import Department
 
 
-class DepartmentService:
-    def __init__(self, session: AsyncSession):
-        self.session = session
-        self.dept_repo = DepartmentRepository(session)
+class DepartmentService(TemporalService[Department]):  # type: ignore[type-var]
+    """Service for Department entity operations.
+
+    Extends TemporalService with department-specific methods like get_by_code.
+    """
+
+    def __init__(self, session: AsyncSession) -> None:
+        super().__init__(Department, session)
 
     async def get_department(self, department_id: UUID) -> Department | None:
-        """Get department by ID."""
-        return await self.dept_repo.get_by_id(department_id)
+        """Get department by ID (current version)."""
+        return await self.get_by_id(department_id)
 
     async def get_departments(
         self, skip: int = 0, limit: int = 100
-    ) -> Sequence[Department]:
+    ) -> list[Department]:
         """Get all departments with pagination."""
-        return await self.dept_repo.get_all(skip=skip, limit=limit)
+        return await self.get_all(skip, limit)
+
+    async def get_by_code(self, code: str) -> Department | None:
+        """Get department by code (current active version)."""
+        stmt = (
+            select(Department)
+            .where(Department.code == code, Department.deleted_at.is_(None))
+            .order_by(Department.valid_time.desc())
+            .limit(1)
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
 
     async def create_department(
-        self, dept_data: DepartmentCreate, actor_id: UUID
+        self, dept_data: dict[str, Any], actor_id: UUID
     ) -> Department:
-        """Create a new department."""
-        existing_dept = await self.dept_repo.get_by_code(dept_data.code)
-        if existing_dept:
-            raise ValueError(f"Department code '{dept_data.code}' already exists")
+        """Create new department using CreateVersionCommand."""
+        # Ensure root department_id exists
+        root_id = dept_data.get("department_id")
+        if not root_id:
+            root_id = uuid4()
+            dept_data["department_id"] = root_id
 
-        new_id = UUID(int=uuid4().int)
-
-        metadata = CommandMetadata(
-            command_type="CREATE_DEPARTMENT",
-            user_id=actor_id,
-            timestamp=datetime.now(UTC),
-            description=f"Created department: {dept_data.code}",
+        cmd = CreateVersionCommand(
+            entity_class=Department,  # type: ignore[type-var]
+            root_id=root_id,
+            **dept_data,
         )
-
-        command = CreateDepartmentCommand(
-            metadata=metadata,
-            code=dept_data.code,
-            name=dept_data.name,
-            manager_id=dept_data.manager_id,
-            is_active=dept_data.is_active,
-            id=new_id,
-        )
-
-        return await command.execute(self.session)
+        return await cmd.execute(self.session)
 
     async def update_department(
-        self, department_id: UUID, update_data: DepartmentUpdate, actor_id: UUID
-    ) -> DepartmentVersion:
-        """Update department details."""
-        changes = update_data.model_dump(exclude_unset=True)
-        if not changes:
-            # If no changes, return current version but verify existence
-            dept = await self.dept_repo.get_by_id(department_id)
-            if not dept or not dept.versions:
-                raise ValueError("Department or version not found")
-            return dept.versions[0]
-
-        metadata = CommandMetadata(
-            command_type="UPDATE_DEPARTMENT",
-            user_id=actor_id,
-            timestamp=datetime.now(UTC),
-            description="Department Update",
+        self, department_id: UUID, update_data: dict[str, Any], actor_id: UUID
+    ) -> Department:
+        """Update department using UpdateVersionCommand."""
+        cmd = UpdateVersionCommand(
+            entity_class=Department,  # type: ignore[type-var]
+            root_id=department_id,
+            **update_data,
         )
-
-        command = UpdateDepartmentCommand(
-            metadata=metadata, department_id=department_id, changes=changes
-        )
-        return await command.execute(self.session)
+        return await cmd.execute(self.session)
 
     async def delete_department(self, department_id: UUID, actor_id: UUID) -> None:
-        """Soft delete department."""
-        metadata = CommandMetadata(
-            command_type="DELETE_DEPARTMENT",
-            user_id=actor_id,
-            timestamp=datetime.now(UTC),
-            description="Department Soft Delete",
+        """Soft delete department using SoftDeleteCommand."""
+        cmd = SoftDeleteCommand(
+            entity_class=Department,  # type: ignore[type-var]
+            root_id=department_id,
         )
-
-        command = DeleteDepartmentCommand(
-            metadata=metadata, department_id=department_id
-        )
-        await command.execute(self.session)
+        await cmd.execute(self.session)

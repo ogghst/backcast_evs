@@ -5,7 +5,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 if TYPE_CHECKING:
-    from app.models.domain.user import User
+    pass
 
 
 # Shared properties
@@ -33,29 +33,19 @@ class UserUpdate(BaseModel):
 
 
 # Properties to return to client (public implementation)
-class UserPublic(UserBase):
+class UserRead(UserBase):
+    """Schema for reading user data (excludes password)."""
+
     id: UUID
+    user_id: UUID
     is_active: bool
-    created_at: datetime | None = (
-        None  # Logic to map valid_from to created_at if needed
-    )
+    created_at: datetime | None = None  # For temporal compatibility
 
     model_config = ConfigDict(from_attributes=True)
 
-    @classmethod
-    def from_entity(cls, user: "User") -> "UserPublic":
-        if not user.versions:
-            raise ValueError("User has no versions")
-        latest_version = user.versions[0]
-        return cls(
-            id=user.id,
-            email=user.email,
-            full_name=latest_version.full_name,
-            department=latest_version.department,
-            role=latest_version.role,
-            is_active=latest_version.is_active,
-            created_at=latest_version.valid_from,
-        )
+
+# Alias for backward compatibility with routes
+UserPublic = UserRead
 
 
 # Login schema

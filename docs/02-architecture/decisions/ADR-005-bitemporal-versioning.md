@@ -91,6 +91,11 @@ class TemporalService(Generic[T]):
     def revert(self, root_id: UUID, branch: str = "main", to_version_id: UUID | None = None) -> T
 ```
 
+### Implementation Guidelines
+
+1.  **SQL-Side Time Synchronization**: All temporal operations (commands, queries) MUST use `func.current_timestamp()` (SQL) rather than `datetime.now()` (Client) to prevent clock skew issues in distributed environments.
+2.  **Explicit Base Cloning**: When cloning versioned entities using `clone()`, explicit exclusion of temporal fields (`valid_time`, `transaction_time`) is REQUIRED to prevent closed ranges from leaking into new open-ended versions.
+
 ## Consequences
 
 ### Positive

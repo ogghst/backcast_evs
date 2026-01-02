@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Backcast EVS"
     DEBUG: bool = False
     SECRET_KEY: str
+    ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     PORT: int = 8020
     BACKEND_CORS_ORIGINS: list[str] = ["http://localhost:5173", "http://localhost:3000"]
