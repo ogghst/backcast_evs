@@ -2,7 +2,9 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type UserPreferenceUpdate = {
-    theme?: string;
-};
-
+/**
+ * Schema for updating user preferences.
+ *
+ * All fields are optional to support partial updates.
+ */
+export type UserPreferenceUpdate = Record<string, any>;

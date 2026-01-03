@@ -2,6 +2,9 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+/**
+ * Schema for user updates.
+ */
 export type UserUpdate = {
     full_name?: (string | null);
     department?: (string | null);

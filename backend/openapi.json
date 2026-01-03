@@ -467,6 +467,59 @@
         }
       }
     },
+    "/api/v1/users/{user_id}/history": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Get User History",
+        "description": "Get version history for a user.\nAdmin can view any user's history. Users can only view their own.",
+        "operationId": "get_user_history",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserHistory"
+                  },
+                  "title": "Response Get User History"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/departments": {
       "get": {
         "tags": [
@@ -961,29 +1014,186 @@
         "required": [
           "access_token"
         ],
-        "title": "Token"
+        "title": "Token",
+        "description": "Schema for authentication token."
+      },
+      "UserHistory": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "full_name": {
+            "type": "string",
+            "title": "Full Name"
+          },
+          "department": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Department"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role",
+            "default": "viewer"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "User Id"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "password_changed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Password Changed At"
+          },
+          "preferences": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preferences"
+          },
+          "valid_time": {
+            "anyOf": [
+              {
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid Time",
+            "description": "Valid time range for this version"
+          },
+          "transaction_time": {
+            "anyOf": [
+              {
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transaction Time",
+            "description": "Transaction time range for this version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "full_name",
+          "id",
+          "user_id",
+          "is_active"
+        ],
+        "title": "UserHistory",
+        "description": "Schema for reading user version history (includes temporal fields)."
       },
       "UserPreferenceResponse": {
         "properties": {
           "theme": {
             "type": "string",
+            "enum": [
+              "light",
+              "dark"
+            ],
             "title": "Theme",
+            "description": "UI theme preference",
             "default": "light"
           }
         },
+        "additionalProperties": true,
         "type": "object",
-        "title": "UserPreferenceResponse"
+        "title": "UserPreferenceResponse",
+        "description": "Schema for preference API responses."
       },
       "UserPreferenceUpdate": {
         "properties": {
           "theme": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "light",
+                  "dark"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Theme",
+            "description": "UI theme preference",
             "default": "light"
           }
         },
+        "additionalProperties": true,
         "type": "object",
-        "title": "UserPreferenceUpdate"
+        "title": "UserPreferenceUpdate",
+        "description": "Schema for updating user preferences.\n\nAll fields are optional to support partial updates."
       },
       "UserRead": {
         "properties": {
@@ -1037,6 +1247,30 @@
               }
             ],
             "title": "Created At"
+          },
+          "password_changed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Password Changed At"
+          },
+          "preferences": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preferences"
           }
         },
         "type": "object",
@@ -1090,7 +1324,8 @@
           "full_name",
           "password"
         ],
-        "title": "UserRegister"
+        "title": "UserRegister",
+        "description": "Schema for user registration."
       },
       "UserUpdate": {
         "properties": {
@@ -1151,7 +1386,8 @@
           }
         },
         "type": "object",
-        "title": "UserUpdate"
+        "title": "UserUpdate",
+        "description": "Schema for user updates."
       },
       "ValidationError": {
         "properties": {

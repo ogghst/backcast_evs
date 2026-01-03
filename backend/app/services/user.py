@@ -39,7 +39,7 @@ class UserService(TemporalService[User]):  # type: ignore[type-var]
 
     async def get_by_email(self, email: str) -> User | None:
         """Get user by email address (current active version)."""
-        # Uses TemporalService-like logic: valid_time @> now() AND deleted_at IS NULL
+        # Use upper(valid_time) IS NULL for open-ended ranges (consistent with get_all)
         from typing import Any, cast
 
         from sqlalchemy import func
@@ -48,7 +48,7 @@ class UserService(TemporalService[User]):  # type: ignore[type-var]
             select(User)
             .where(
                 User.email == email,
-                cast(Any, User).valid_time.op("@>")(func.current_timestamp()),
+                func.upper(cast(Any, User).valid_time).is_(None),
                 cast(Any, User).deleted_at.is_(None),
             )
             .order_by(cast(Any, User).valid_time.desc())
@@ -108,6 +108,22 @@ class UserService(TemporalService[User]):  # type: ignore[type-var]
             root_id=user_id,
         )
         await cmd.execute(self.session)
+
+    async def get_user_history(self, user_id: UUID) -> list[User]:
+        """Get all versions of a user by root user_id (for version history)."""
+        from typing import Any, cast
+        
+        stmt = (
+            select(User)
+            .where(
+                User.user_id == user_id,
+                # Include all versions (both open and closed) but exclude deleted
+                cast(Any, User).deleted_at.is_(None),
+            )
+            .order_by(cast(Any, User).transaction_time.desc())
+        )
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
 
     async def get_user_preferences(self, user_id: UUID) -> dict[str, Any]:
         """Get user preferences from JSON column."""

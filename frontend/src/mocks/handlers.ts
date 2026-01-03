@@ -31,6 +31,7 @@ export const handlers = [
       items: [
         {
           id: "user-1",
+          user_id: "user-root-1",
           email: "alice@example.com",
           full_name: "Alice Johnson",
           is_active: true,
@@ -39,6 +40,7 @@ export const handlers = [
         },
         {
           id: "user-2",
+          user_id: "user-root-2",
           email: "bob@example.com",
           full_name: "Bob Smith",
           is_active: true,
@@ -47,6 +49,7 @@ export const handlers = [
         },
         {
           id: "user-3",
+          user_id: "user-root-3",
           email: "charlie@example.com",
           full_name: "Charlie Davis",
           is_active: false,
@@ -58,5 +61,33 @@ export const handlers = [
       page: 1,
       size: 10,
     });
+  }),
+
+  // User History Handler
+  http.get("*/api/v1/users/:userId/history", async () => {
+    return HttpResponse.json([
+      {
+        id: "ver-2",
+        user_id: "user-root-1",
+        email: "alice@example.com",
+        full_name: "Alice Johnson (Updated)",
+        valid_time: ["2024-01-02T10:00:00Z", null],
+        transaction_time: ["2024-01-02T10:00:00Z", null],
+        is_active: true,
+        role: "admin",
+        department: "Engineering",
+      },
+      {
+        id: "ver-1",
+        user_id: "user-root-1",
+        email: "alice@example.com",
+        full_name: "Alice Johnson",
+        valid_time: ["2024-01-01T10:00:00Z", "2024-01-02T10:00:00Z"],
+        transaction_time: ["2024-01-01T10:00:00Z", "2024-01-02T10:00:00Z"],
+        is_active: true,
+        role: "admin",
+        department: "Engineering",
+      },
+    ]);
   }),
 ];

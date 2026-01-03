@@ -2,6 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { UserHistory } from '../models/UserHistory';
 import type { UserPreferenceResponse } from '../models/UserPreferenceResponse';
 import type { UserPreferenceUpdate } from '../models/UserPreferenceUpdate';
 import type { UserRead } from '../models/UserRead';
@@ -151,6 +152,28 @@ export class UsersService {
         return __request(OpenAPI, {
             method: 'DELETE',
             url: '/api/v1/users/{user_id}',
+            path: {
+                'user_id': userId,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Get User History
+     * Get version history for a user.
+     * Admin can view any user's history. Users can only view their own.
+     * @param userId
+     * @returns UserHistory Successful Response
+     * @throws ApiError
+     */
+    public static getUserHistory(
+        userId: string,
+    ): CancelablePromise<Array<UserHistory>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/users/{user_id}/history',
             path: {
                 'user_id': userId,
             },

@@ -2,7 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type UserPreferenceResponse = {
-    theme?: string;
-};
-
+/**
+ * Schema for preference API responses.
+ */
+export type UserPreferenceResponse = Record<string, any>;

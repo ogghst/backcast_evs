@@ -39,12 +39,8 @@ class TemporalService[TVersionable: VersionableProtocol]:
     async def get_all(self, skip: int = 0, limit: int = 100) -> list[TVersionable]:
         """Get all entities (current versions) with pagination.
 
-        Filters by valid_time @> now() and deleted_at IS NULL.
+        Filters by upper(valid_time) IS NULL (open-ended) and deleted_at IS NULL.
         """
-        # Note: We use string references for operators to avoid importing func/cast here if possible,
-        # but typically we need sqlalchemy imports.
-        # However, since this is valid_time, we should assume the model has it.
-        # For valid_time @> now(), we need standard SQLAlchemy operators.
         from typing import Any, cast
 
         from sqlalchemy import func
@@ -52,7 +48,10 @@ class TemporalService[TVersionable: VersionableProtocol]:
         stmt = (
             select(self.entity_class)
             .where(
-                cast(Any, self.entity_class).valid_time.op("@>")(func.current_timestamp()),
+                # CRITICAL FIX: Use upper(valid_time) IS NULL instead of @> operator
+                # The @> operator can match recently-closed versions if query runs
+                # at the exact same microsecond as the close operation
+                func.upper(cast(Any, self.entity_class).valid_time).is_(None),
                 cast(Any, self.entity_class).deleted_at.is_(None)
             )
             .offset(skip)

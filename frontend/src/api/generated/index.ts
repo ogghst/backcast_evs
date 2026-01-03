@@ -13,6 +13,7 @@ export type { DepartmentRead } from './models/DepartmentRead';
 export type { DepartmentUpdate } from './models/DepartmentUpdate';
 export type { HTTPValidationError } from './models/HTTPValidationError';
 export type { Token } from './models/Token';
+export type { UserHistory } from './models/UserHistory';
 export type { UserPreferenceResponse } from './models/UserPreferenceResponse';
 export type { UserPreferenceUpdate } from './models/UserPreferenceUpdate';
 export type { UserRead } from './models/UserRead';

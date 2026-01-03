@@ -41,6 +41,31 @@ vi.mock("antd", async () => {
   };
 });
 
+// Mock VersionHistoryDrawer to avoid AntD Drawer JSDOM issues
+vi.mock("@/components/common/VersionHistory", () => ({
+  VersionHistoryDrawer: ({
+    open,
+    versions,
+    entityName,
+  }: {
+    open: boolean;
+    versions: { id: string; valid_from: string }[];
+    entityName: string;
+  }) =>
+    open ? (
+      <div data-testid="mock-history-drawer">
+        {entityName}
+        <ul>
+          {versions.map((v) => (
+            <li key={v.id}>
+              {v.id} - {v.valid_from}
+            </li>
+          ))}
+        </ul>
+      </div>
+    ) : null,
+}));
+
 const createTestClient = () =>
   new QueryClient({
     defaultOptions: {
@@ -50,11 +75,15 @@ const createTestClient = () =>
     },
   });
 
+import { MemoryRouter } from "react-router-dom";
+
 const renderWithProviders = (ui: React.ReactNode) => {
   const queryClient = createTestClient();
   return render(
     <QueryClientProvider client={queryClient}>
-      <ConfigProvider>{ui}</ConfigProvider>
+      <MemoryRouter>
+        <ConfigProvider>{ui}</ConfigProvider>
+      </MemoryRouter>
     </QueryClientProvider>
   );
 };
@@ -88,5 +117,36 @@ describe("UserList Integration", () => {
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(screen.getByText("Mock Modal")).toBeInTheDocument();
+  });
+
+  it("opens history drawer and displays versions when History button is clicked", async () => {
+    renderWithProviders(<UserList />);
+
+    // Wait for list to load
+    await waitFor(() => screen.getByText("Alice Johnson"));
+
+    // Find custom history button (by title)
+    // Note: If multiple rows, pick first.
+    const historyButtons = screen.getAllByTitle("View History");
+    fireEvent.click(historyButtons[0]);
+
+    // Check for Drawer
+    await waitFor(() => {
+      // VersionHistoryDrawer renders "User: {name}" as entityName
+      expect(screen.getByText("User: Alice Johnson")).toBeInTheDocument();
+    });
+
+    // Check for version content from mock
+    await waitFor(() => {
+      // Verifying v2 (latest)
+      expect(screen.getByText(/v2/)).toBeInTheDocument();
+    });
+
+    // Verifying timestamp (basic check for date part)
+    // 2024-01-02 from valid_time
+    expect(screen.getByText(/2024-01-02/)).toBeInTheDocument();
+
+    // Verifying v1 (older)
+    expect(screen.getByText(/v1/)).toBeInTheDocument();
   });
 });

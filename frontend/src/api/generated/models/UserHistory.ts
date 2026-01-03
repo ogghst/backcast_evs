@@ -3,9 +3,9 @@
 /* tslint:disable */
 /* eslint-disable */
 /**
- * Schema for reading user data (excludes password).
+ * Schema for reading user version history (includes temporal fields).
  */
-export type UserRead = {
+export type UserHistory = {
     email: string;
     full_name: string;
     department?: (string | null);
@@ -16,5 +16,13 @@ export type UserRead = {
     created_at?: (string | null);
     password_changed_at?: (string | null);
     preferences?: (Record<string, any> | null);
+    /**
+     * Valid time range for this version
+     */
+    valid_time?: null;
+    /**
+     * Transaction time range for this version
+     */
+    transaction_time?: null;
 };
 

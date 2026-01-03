@@ -2,6 +2,9 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+/**
+ * Schema for user registration.
+ */
 export type UserRegister = {
     email: string;
     full_name: string;

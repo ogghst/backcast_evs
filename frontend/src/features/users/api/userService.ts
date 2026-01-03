@@ -41,4 +41,9 @@ export const UserService = {
   deleteUser: async (id: string): Promise<void> => {
     await UsersService.deleteUser(id);
   },
+
+  getUserHistory: async (userId: string): Promise<User[]> => {
+    const response = await UsersService.getUserHistory(userId);
+    return response as unknown as User[];
+  },
 };

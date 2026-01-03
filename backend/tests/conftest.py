@@ -18,7 +18,10 @@ from sqlalchemy.ext.asyncio import (
 from sqlalchemy.pool import NullPool
 
 from alembic import command
+from httpx import ASGITransport, AsyncClient
+
 from app.core.config import settings
+from app.main import app
 
 # Test database URL
 # Replace database name with backend_evs_test
@@ -87,3 +90,12 @@ async def db_session(db_engine: AsyncEngine) -> AsyncGenerator[AsyncSession, Non
 
         # Rollback the transaction after the test completes
         await trans.rollback()
+
+
+@pytest_asyncio.fixture(scope="function")
+async def client() -> AsyncGenerator[AsyncClient, None]:
+    """Create async client for tests."""
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as ac:
+        yield ac

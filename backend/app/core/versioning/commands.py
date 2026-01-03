@@ -11,7 +11,7 @@ from abc import ABC, abstractmethod
 from typing import Any, TypeVar, cast
 from uuid import UUID
 
-from sqlalchemy import func, select, update
+from sqlalchemy import func, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.protocols import VersionableProtocol
@@ -54,21 +54,31 @@ class VersionedCommandABC[TVersionable: VersionableProtocol](ABC):
         self, session: AsyncSession, version: TVersionable
     ) -> None:
         """Close a version by setting upper bound on valid_time."""
-        # Use direct SQL update to handle Range mechanics reliably
+        # CRITICAL FIX: PostgreSQL creates EMPTY range if lower >= upper
+        # Solution: Ensure upper is always > lower using GREATEST
+        # Use SQLAlchemy ORM with PostgreSQL-specific functions
+        
         stmt = (
             update(self.entity_class)
             .where(cast(Any, self.entity_class).id == version.id)
             .values(
                 valid_time=func.tstzrange(
-                    func.lower(self.entity_class.valid_time),
-                    func.current_timestamp(),
+                    func.lower(cast(Any, self.entity_class).valid_time),
+                    func.greatest(
+                        func.lower(cast(Any, self.entity_class).valid_time) + text("interval '1 microsecond'"),
+                        func.current_timestamp()
+                    ),
                     "[)"
                 )
             )
         )
-        await session.execute(stmt)
+        
+        result = await session.execute(stmt)
+        
+        if result.rowcount == 0:
+            raise RuntimeError(f"Concurrency Error: Failed to close version {version.id}. Row not updated.")
+        
         await session.flush()
-        # Expire to ensure next access reloads correct state if needed
         session.expire(version)
 
 
@@ -139,13 +149,7 @@ class UpdateVersionCommand(VersionedCommandABC[TVersionable]):
         result = await session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def _close_version(
-        self, session: AsyncSession, version: TVersionable
-    ) -> None:
-        """Close a version by setting upper bound on valid_time."""
-        # This would need to update the TSTZRANGE upper bound
-        # For now, simplified - actual implementation needs TSTZRANGE manipulation
-        pass
+
 
 
 class SoftDeleteCommand(VersionedCommandABC[TVersionable]):

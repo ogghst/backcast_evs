@@ -10,7 +10,7 @@ from app.models.schemas.preference import (
     UserPreferenceResponse,
     UserPreferenceUpdate,
 )
-from app.models.schemas.user import UserPublic, UserRegister, UserUpdate
+from app.models.schemas.user import UserHistory, UserPublic, UserRegister, UserUpdate
 from app.services.user import UserService
 
 router = APIRouter()
@@ -179,3 +179,22 @@ async def delete_user(
         )
 
     await service.delete_user(user_id=user_id, actor_id=current_user.id)
+
+
+@router.get("/{user_id}/history", response_model=list[UserHistory], operation_id="get_user_history")
+async def get_user_history(
+    user_id: UUID,
+    current_user: User = Depends(get_current_active_user),
+    service: UserService = Depends(get_user_service),
+) -> Sequence[User]:
+    """
+    Get version history for a user.
+    Admin can view any user's history. Users can only view their own.
+    """
+    if current_user.role != "admin" and current_user.user_id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="The user doesn't have enough privileges",
+        )
+
+    return await service.get_user_history(user_id)
