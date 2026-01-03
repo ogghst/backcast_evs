@@ -1,10 +1,10 @@
+import { App, Button, Card, Space, Table, Tag } from "antd";
+import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
-import { Button, Space, Tag, App } from "antd";
-import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
-import { useUserStore } from "@/stores/useUserStore";
-import { DataTable } from "@/components/DataTable";
-import { User, UserRole, CreateUserPayload } from "@/types/user";
+import { CreateUserPayload, User } from "@/types/user";
 import { UserModal } from "./UserModal";
+import { useUserStore } from "@/stores/useUserStore";
+import type { ColumnType } from "antd/es/table";
 
 export const UserList = () => {
   const { users, loading, fetchUsers, deleteUser } = useUserStore();
@@ -25,11 +25,12 @@ export const UserList = () => {
       onOk: async () => {
         await deleteUser(id);
         message.success("User deleted successfully");
+        fetchUsers();
       },
     });
   };
 
-  const columns = [
+  const columns: ColumnType<User>[] = [
     {
       title: "Full Name",
       dataIndex: "full_name",
@@ -45,7 +46,7 @@ export const UserList = () => {
       title: "Role",
       dataIndex: "role",
       key: "role",
-      render: (role: UserRole) => <Tag color="blue">{role.toUpperCase()}</Tag>,
+      render: (role: string) => <Tag color="blue">{role.toUpperCase()}</Tag>,
     },
     {
       title: "Department",
@@ -56,16 +57,16 @@ export const UserList = () => {
       title: "Status",
       dataIndex: "is_active",
       key: "is_active",
-      render: (active: boolean) => (
-        <Tag color={active ? "green" : "red"}>
-          {active ? "Active" : "Inactive"}
+      render: (isActive: boolean) => (
+        <Tag color={isActive ? "green" : "red"}>
+          {isActive ? "Active" : "Inactive"}
         </Tag>
       ),
     },
     {
       title: "Actions",
       key: "actions",
-      render: (_: unknown, record: User) => (
+      render: (_, record) => (
         <Space>
           <Button
             icon={<EditOutlined />}
@@ -86,33 +87,33 @@ export const UserList = () => {
 
   return (
     <div>
-      <div
-        style={{
-          marginBottom: 16,
-          display: "flex",
-          justifyContent: "space-between",
-        }}
+      <Card
+        title="User Management"
+        extra={
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => {
+              setSelectedUser(null);
+              setModalOpen(true);
+            }}
+          >
+            Add User
+          </Button>
+        }
+        style={{ marginBottom: 16 }}
       >
-        <h2>User Management</h2>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => {
-            setSelectedUser(null);
-            setModalOpen(true);
+        <Table<User>
+          columns={columns}
+          dataSource={users}
+          loading={loading}
+          rowKey="id"
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: true,
           }}
-        >
-          Add User
-        </Button>
-      </div>
-
-      <DataTable
-        columns={columns}
-        dataSource={users}
-        loading={loading}
-        rowKey="id"
-        storageKey="users_table"
-      />
+        />
+      </Card>
 
       <UserModal
         open={modalOpen}
@@ -126,11 +127,10 @@ export const UserList = () => {
             await useUserStore
               .getState()
               .createUser(values as CreateUserPayload);
-            // Note: values needs casting or precise type guard if strictly typed between Create/Update
-            // CreateUserPayload vs UpdateUserPayload
             message.success("User created successfully");
           }
           setModalOpen(false);
+          fetchUsers();
         }}
         confirmLoading={loading}
         initialValues={selectedUser}

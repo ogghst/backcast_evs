@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { immer } from "zustand/middleware/immer";
 
 interface AppState {
   isSidebarOpen: boolean;
@@ -7,8 +8,12 @@ interface AppState {
   // currently we are just demonstrating the pattern.
 }
 
-export const useAppStore = create<AppState>((set) => ({
-  isSidebarOpen: true,
-  toggleSidebar: () =>
-    set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
-}));
+export const useAppStore = create<AppState>()(
+  immer((set) => ({
+    isSidebarOpen: true,
+    toggleSidebar: () =>
+      set((state) => {
+        state.isSidebarOpen = !state.isSidebarOpen;
+      }),
+  }))
+);

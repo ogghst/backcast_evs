@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
@@ -40,6 +40,8 @@ class UserRead(UserBase):
     user_id: UUID
     is_active: bool
     created_at: datetime | None = None  # For temporal compatibility
+    password_changed_at: datetime | None = None  # Track password changes
+    preferences: dict[str, Any] | None = None  # User preferences as JSON
 
     model_config = ConfigDict(from_attributes=True)
 

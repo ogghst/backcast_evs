@@ -160,3 +160,143 @@ class TestUserServiceDelete:
         # 2. get_by_email should return None
         result = await service.get_by_email("delete_test@example.com")
         assert result is None
+
+
+class TestUserServicePreferences:
+    """Test UserService preference methods."""
+
+    @pytest.mark.asyncio
+    async def test_get_user_preferences_returns_empty_dict_for_new_user(
+        self, db_session: AsyncSession
+    ) -> None:
+        """Test that get_user_preferences returns empty dict when user has no preferences."""
+        # Arrange
+        service = UserService(db_session)
+        user_in = UserRegister(
+            email="pref_test@example.com",
+            password="secret_password",
+            full_name="Pref Test",
+            role="user",
+        )
+        user = await service.create_user(user_in, actor_id=uuid4())
+
+        # Act
+        prefs = await service.get_user_preferences(user.id)
+
+        # Assert
+        assert prefs == {}
+
+    @pytest.mark.asyncio
+    async def test_get_user_preferences_raises_for_nonexistent_user(
+        self, db_session: AsyncSession
+    ) -> None:
+        """Test that get_user_preferences raises ValueError for non-existent user."""
+        # Arrange
+        service = UserService(db_session)
+        non_existent_id = uuid4()
+
+        # Act & Assert
+        with pytest.raises(ValueError, match="User .* not found"):
+            await service.get_user_preferences(non_existent_id)
+
+    @pytest.mark.asyncio
+    async def test_update_user_preferences_creates_preferences(
+        self, db_session: AsyncSession
+    ) -> None:
+        """Test that update_user_preferences creates preferences for new user."""
+        # Arrange
+        service = UserService(db_session)
+        user_in = UserRegister(
+            email="update_pref@example.com",
+            password="secret_password",
+            full_name="Update Pref Test",
+            role="user",
+        )
+        user = await service.create_user(user_in, actor_id=uuid4())
+
+        # Act
+        new_prefs = {"theme": "dark"}
+        result = await service.update_user_preferences(user.id, new_prefs)
+        await db_session.commit()
+
+        # Assert
+        assert result == {"theme": "dark"}
+        
+        # Verify persistence
+        fetched_prefs = await service.get_user_preferences(user.id)
+        assert fetched_prefs == {"theme": "dark"}
+
+    @pytest.mark.asyncio
+    async def test_update_user_preferences_merges_existing(
+        self, db_session: AsyncSession
+    ) -> None:
+        """Test that update_user_preferences merges with existing preferences."""
+        # Arrange
+        service = UserService(db_session)
+        user_in = UserRegister(
+            email="merge_pref@example.com",
+            password="secret_password",
+            full_name="Merge Pref Test",
+            role="user",
+        )
+        user = await service.create_user(user_in, actor_id=uuid4())
+        
+        # Set initial preferences
+        await service.update_user_preferences(user.id, {"theme": "light", "locale": "en"})
+        await db_session.commit()
+
+        # Act - update only theme
+        result = await service.update_user_preferences(user.id, {"theme": "dark"})
+        await db_session.commit()
+
+        # Assert - theme updated, locale preserved
+        assert result == {"theme": "dark", "locale": "en"}
+        
+        # Verify persistence
+        fetched_prefs = await service.get_user_preferences(user.id)
+        assert fetched_prefs == {"theme": "dark", "locale": "en"}
+
+    @pytest.mark.asyncio
+    async def test_update_user_preferences_raises_for_nonexistent_user(
+        self, db_session: AsyncSession
+    ) -> None:
+        """Test that update_user_preferences raises ValueError for non-existent user."""
+        # Arrange
+        service = UserService(db_session)
+        non_existent_id = uuid4()
+
+        # Act & Assert
+        with pytest.raises(ValueError, match="User .* not found"):
+            await service.update_user_preferences(non_existent_id, {"theme": "dark"})
+
+    @pytest.mark.asyncio
+    async def test_update_user_preferences_validates_theme(
+        self, db_session: AsyncSession
+    ) -> None:
+        """Test that update_user_preferences validates theme values."""
+        # Arrange
+        service = UserService(db_session)
+        user_in = UserRegister(
+            email="validate_pref@example.com",
+            password="secret_password",
+            full_name="Validate Pref Test",
+            role="user",
+        )
+        user = await service.create_user(user_in, actor_id=uuid4())
+
+        # Act & Assert - valid themes should work
+        result = await service.update_user_preferences(user.id, {"theme": "dark"})
+        assert result["theme"] == "dark"
+        
+        result = await service.update_user_preferences(user.id, {"theme": "light"})
+        assert result["theme"] == "light"
+        
+        # Extra fields should be allowed
+        result = await service.update_user_preferences(
+            user.id, {"theme": "dark", "locale": "en-US", "timezone": "UTC"}
+        )
+        assert result["theme"] == "dark"
+        assert result["locale"] == "en-US"
+        assert result["timezone"] == "UTC"
+
+

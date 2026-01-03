@@ -1,0 +1,8 @@
+[
+  {
+    "code": "ADMIN",
+    "name": "Administration",
+    "manager_id": null,
+    "is_active": true
+  }
+]

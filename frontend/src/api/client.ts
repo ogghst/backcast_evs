@@ -3,7 +3,8 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { OpenAPI } from "./generated";
 
 // Base API URL should come from environment variables
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
+// Note: Do NOT include /api/v1 here - the generated services already have it hardcoded
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 // Configure generated client
 OpenAPI.BASE = API_URL;

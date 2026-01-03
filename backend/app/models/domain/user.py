@@ -3,18 +3,20 @@
 Satisfies VersionableProtocol via structural subtyping (duck typing).
 """
 
-from typing import TYPE_CHECKING
+from datetime import datetime
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from sqlalchemy import Boolean, String
+from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base.base import EntityBase
 from app.models.mixins import VersionableMixin
 
 if TYPE_CHECKING:
-    from app.models.domain.user_preference import UserPreference
+    pass
 
 
 # from app.models.protocols import VersionableProtocol # Removed as per instruction
@@ -42,6 +44,9 @@ class User(EntityBase, VersionableMixin):  # Removed VersionableProtocol from ba
 
     # Security
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
+    password_changed_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True
+    )
 
     # Profile (versioned)
     full_name: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -49,18 +54,15 @@ class User(EntityBase, VersionableMixin):  # Removed VersionableProtocol from ba
     department: Mapped[str | None] = mapped_column(String(100), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
+    # Preferences (stored as JSON)
+    preferences: Mapped[dict[str, Any] | None] = mapped_column(
+        JSONB, nullable=True, default=dict
+    )
+
     # Temporal fields inherited from VersionableMixin:
     # - valid_time: TSTZRANGE
     # - transaction_time: TSTZRANGE
     # - deleted_at: datetime | None
-
-    # Relationships
-    preference: Mapped["UserPreference"] = relationship(
-        "UserPreference",
-        back_populates="user",
-        uselist=False,
-        cascade="all, delete-orphan",
-    )
 
     def __repr__(self) -> str:
         return f"<User(id={self.id}, user_id={self.user_id}, email={self.email}, full_name={self.full_name})>"

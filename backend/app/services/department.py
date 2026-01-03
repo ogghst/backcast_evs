@@ -3,7 +3,6 @@
 Provides Department-specific operations on top of generic temporal service.
 """
 
-from typing import Any
 from uuid import UUID, uuid4
 
 from sqlalchemy import select

@@ -1,0 +1,9 @@
+[
+  {
+    "email": "admin@backcast.org",
+    "password": "adminadmin",
+    "full_name": "System Administrator",
+    "role": "admin",
+    "department": null
+  }
+]

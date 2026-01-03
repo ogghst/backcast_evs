@@ -1,35 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, it, expect, vi } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { UserList } from "./UserList";
-import { useUserStore } from "@/stores/useUserStore";
-import { User } from "@/types/user";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ConfigProvider } from "antd";
 
-// Mock the stores
-vi.mock("@/stores/useUserStore", () => ({
-  useUserStore: vi.fn(),
-}));
-
-// Mock DataTable since it's tested separately
-vi.mock("@/components/DataTable", () => ({
-  DataTable: ({
-    dataSource,
-    columns,
-  }: {
-    dataSource: Record<string, unknown>[];
-    columns: Record<string, unknown>[];
-  }) => (
-    <div data-testid="data-table">
-      {dataSource.map((item: Record<string, unknown>) => (
-        <div key={item.id as string}>{item.full_name as string}</div>
-      ))}
-      <div data-testid="columns">
-        {columns
-          .map((c: Record<string, unknown>) => c.title as string)
-          .join(",")}
-      </div>
-    </div>
-  ),
-}));
+// We DO NOT mock useUserStore here, so it hits the real API layer
+// MSW handlers in setupTests.ts will intercept the requests
 
 // Mock UserModal to avoid complex rendering
 vi.mock("./UserModal", () => ({
@@ -51,60 +27,63 @@ vi.mock("./UserModal", () => ({
     ) : null,
 }));
 
-describe("UserList", () => {
-  const mockUsers: User[] = [
-    {
-      id: "1",
-      email: "test1@example.com",
-      full_name: "User One",
-      role: "admin",
-      is_active: true,
-      is_superuser: false,
-      created_at: "2025-01-01",
+// Mock Ant Design App component
+vi.mock("antd", async () => {
+  const actual = await vi.importActual("antd");
+  return {
+    ...actual,
+    App: {
+      useApp: () => ({
+        message: { success: vi.fn(), error: vi.fn() },
+        modal: { confirm: vi.fn() },
+      }),
     },
-    {
-      id: "2",
-      email: "test2@example.com",
-      full_name: "User Two",
-      role: "viewer",
-      is_active: false,
-      is_superuser: false,
-      created_at: "2025-01-01",
+  };
+});
+
+const createTestClient = () =>
+  new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+      },
     },
-  ];
-
-  const mockFetchUsers = vi.fn();
-  const mockDeleteUser = vi.fn();
-  const mockCreateUser = vi.fn();
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-    (useUserStore as unknown as ReturnType<typeof vi.fn>).mockImplementation(
-      (selector: (state: unknown) => unknown) => {
-        const state = {
-          users: mockUsers,
-          loading: false,
-          fetchUsers: mockFetchUsers,
-          deleteUser: mockDeleteUser,
-          createUser: mockCreateUser,
-        };
-        return selector ? selector(state) : state;
-      }
-    );
   });
 
-  it("renders user list and fetches data on mount", () => {
-    render(<UserList />);
+const renderWithProviders = (ui: React.ReactNode) => {
+  const queryClient = createTestClient();
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <ConfigProvider>{ui}</ConfigProvider>
+    </QueryClientProvider>
+  );
+};
 
-    expect(mockFetchUsers).toHaveBeenCalled();
-    expect(screen.getByText("User One")).toBeInTheDocument();
-    expect(screen.getByText("User Two")).toBeInTheDocument();
+describe("UserList Integration", () => {
+  it("renders user list and fetches data from MSW", async () => {
+    // This looks for data defined in src/mocks/handlers.ts
+    // Alice Johnson, Bob Smith, Charlie Davis
+    renderWithProviders(<UserList />);
+
+    // Initial loading state might be visible, wait for data
+    await waitFor(() => {
+      expect(screen.getByText("Alice Johnson")).toBeInTheDocument();
+    });
+
+    expect(screen.getByText("Bob Smith")).toBeInTheDocument();
+    expect(screen.getByText("Charlie Davis")).toBeInTheDocument();
+
+    // Verify role mapping from mock data
+    expect(screen.getByText("Engineering")).toBeInTheDocument();
   });
 
-  it("opens create modal when Add button is clicked", () => {
-    render(<UserList />);
+  it("opens create modal when Add button is clicked", async () => {
+    renderWithProviders(<UserList />);
 
-    const addButton = screen.getByText(/Add User/i); // Adjust text based on actual implementation
+    // Wait for list to load first to ensure interactive
+    await waitFor(() => screen.getByText("Alice Johnson"));
+
+    const addButton = screen.getByText(/Add User/i);
     fireEvent.click(addButton);
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();

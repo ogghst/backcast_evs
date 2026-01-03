@@ -12,7 +12,7 @@ from app.core.config import settings
 from app.core.base.base import Base
 
 # Import all models to ensure they are attached to Base.metadata
-from app.models.domain import department, project, user, user_preference  # noqa: F401
+from app.models.domain import department, project, user  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

@@ -3,17 +3,14 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies.auth import get_current_active_user, get_user_service
-from app.db.session import get_db
 from app.models.domain.user import User
-from app.models.schemas.user import UserPublic, UserRegister, UserUpdate
 from app.models.schemas.preference import (
-    UserPreferenceCreate,
     UserPreferenceResponse,
     UserPreferenceUpdate,
 )
+from app.models.schemas.user import UserPublic, UserRegister, UserUpdate
 from app.services.user import UserService
 
 router = APIRouter()
@@ -76,50 +73,39 @@ async def create_user(
 @router.get("/me/preferences", response_model=UserPreferenceResponse, operation_id="get_my_preferences")
 async def get_my_preferences(
     current_user: User = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_db),
+    service: UserService = Depends(get_user_service),
 ) -> Any:
     """
     Get current user's preferences.
     """
-    from app.services.user_preference import UserPreferenceService
-
-    service = UserPreferenceService(session)
-
-    # Note: UserPreferenceService.get_by_user_id takes root ID?
-    # Or version ID? We decided it links to 'users.id' which is version ID.
-    # So we pass current_user.id
-    pref = await service.get_by_user_id(current_user.id)
-    if not pref:
-        # Return default?
-        from app.models.domain.user_preference import UserPreference
-
-        return UserPreference(user_id=current_user.id, theme="light")
-    return pref
+    try:
+        prefs = await service.get_user_preferences(current_user.id)
+        return UserPreferenceResponse(**prefs) if prefs else UserPreferenceResponse()
+    except ValueError:
+        # User not found, return default
+        return UserPreferenceResponse()
 
 
 @router.put("/me/preferences", response_model=UserPreferenceResponse, operation_id="update_my_preferences")
 async def update_my_preferences(
     pref_in: UserPreferenceUpdate,
     current_user: User = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_db),
+    service: UserService = Depends(get_user_service),
 ) -> Any:
     """
     Update current user's preferences.
     """
-    from app.services.user_preference import UserPreferenceService
-
-    service = UserPreferenceService(session)
-
-    # Create or update
-    pref = await service.get_by_user_id(current_user.id)
-    if pref:
-        return await service.update_preference(current_user.id, pref_in)
-    else:
-        # Construct Create model from Update model (assuming theme presence or defaults)
-        # Verify if pref_in has all needed fields for creation if not optional
-        return await service.create_preference(
-            current_user.id, UserPreferenceCreate(theme=pref_in.theme)
+    try:
+        # Use exclude_unset to only include fields that were actually provided
+        updated_prefs = await service.update_user_preferences(
+            current_user.id, pref_in.model_dump(exclude_unset=True)
         )
+        return UserPreferenceResponse(**updated_prefs)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        ) from e
 
 
 @router.get("/{user_id}", response_model=UserPublic, operation_id="get_user")

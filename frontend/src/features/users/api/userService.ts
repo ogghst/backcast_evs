@@ -16,8 +16,16 @@ export const UserService = {
     const limit = filters.per_page || 100;
 
     // Note: Search param is not yet implemented in backend
-    const users = await UsersService.getUsers(skip, limit);
-    return users as unknown as User[];
+    const response = await UsersService.getUsers(skip, limit);
+
+    // Handle paginated response structure from backend
+    if (response && typeof response === "object" && "items" in response) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (response as any).items as User[];
+    }
+
+    // Fallback if backend returns direct array (unlikely but safe)
+    return response as unknown as User[];
   },
 
   createUser: async (data: CreateUserPayload): Promise<User> => {

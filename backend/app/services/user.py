@@ -6,12 +6,10 @@ Provides User-specific operations on top of generic temporal service.
 from typing import Any
 from uuid import UUID, uuid4
 
-from app.core.security import get_password_hash
-from app.models.schemas.user import UserRegister, UserUpdate
-
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.security import get_password_hash
 from app.core.versioning.commands import (
     CreateVersionCommand,
     SoftDeleteCommand,
@@ -19,7 +17,7 @@ from app.core.versioning.commands import (
 )
 from app.core.versioning.service import TemporalService
 from app.models.domain.user import User
-
+from app.models.schemas.user import UserRegister, UserUpdate
 
 
 class UserService(TemporalService[User]):  # type: ignore[type-var]
@@ -110,3 +108,30 @@ class UserService(TemporalService[User]):  # type: ignore[type-var]
             root_id=user_id,
         )
         await cmd.execute(self.session)
+
+    async def get_user_preferences(self, user_id: UUID) -> dict[str, Any]:
+        """Get user preferences from JSON column."""
+        user = await self.get_user(user_id)
+        if not user:
+            raise ValueError(f"User {user_id} not found")
+        return user.preferences or {}
+
+    async def update_user_preferences(
+        self, user_id: UUID, preferences_data: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Update user preferences in JSON column."""
+        user = await self.get_user(user_id)
+        if not user:
+            raise ValueError(f"User {user_id} not found")
+
+        # Merge with existing preferences
+        current_prefs = user.preferences or {}
+        updated_prefs = {**current_prefs, **preferences_data}
+
+        # Update the user entity directly (no versioning for preferences)
+        user.preferences = updated_prefs
+        await self.session.commit()  # Commit immediately to persist changes
+
+        return updated_prefs
+
+

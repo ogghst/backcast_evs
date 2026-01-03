@@ -11,7 +11,6 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-
 from app.models.protocols import VersionableProtocol
 
 
@@ -46,8 +45,9 @@ class TemporalService[TVersionable: VersionableProtocol]:
         # but typically we need sqlalchemy imports.
         # However, since this is valid_time, we should assume the model has it.
         # For valid_time @> now(), we need standard SQLAlchemy operators.
+        from typing import Any, cast
+
         from sqlalchemy import func
-        from typing import cast, Any
 
         stmt = (
             select(self.entity_class)
@@ -66,7 +66,7 @@ class TemporalService[TVersionable: VersionableProtocol]:
 
         Finds version where valid_time @> as_of for the given entity_id.
         """
-        from typing import cast, Any
+        from typing import Any, cast
 
         # We need to query by the root ID (entity_id passed here is assumed to be the root ID in this context?)
         # Wait, get_by_id usually takes the PK. But for time travel we often query by the Cluster/Root ID.
