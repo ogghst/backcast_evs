@@ -1,11 +1,12 @@
 # System Map: Backcast EVS
 
-**Last Updated:** 2025-12-30
+**Last Updated:** 2026-01-01
 **Technology:** Python 3.12, FastAPI, React 18, PostgreSQL, AsyncIO
 
 ## High-Level Architecture
 
 Backcast EVS is a full-stack application for project financial management.
+
 - **Frontend**: React SPA (Single Page Application) for user interaction.
 - **Backend**: FastAPI implementation of Entity Versioning Control System (EVCS).
 
@@ -14,6 +15,7 @@ Backcast EVS is a full-stack application for project financial management.
 ## Core Technology Choices
 
 ### Backend
+
 - **Web Framework:** FastAPI (async ASGI)
 - **ORM:** SQLAlchemy 2.0 (async)
 - **Database:** PostgreSQL 15+
@@ -21,9 +23,10 @@ Backcast EVS is a full-stack application for project financial management.
 - **Testing:** pytest (asyncio)
 
 ### Frontend
+
 - **Framework:** React 18 + Vite
 - **Language:** TypeScript
-- **UI Library:** Ant Design 5
+- **UI Library:** Ant Design 6
 - **Data Fetching:** TanStack Query (React Query)
 - **State:** Zustand
 
@@ -41,12 +44,20 @@ The system is partitioned into the following bounded contexts. See [01-bounded-c
 
 ## Versioning Architecture (EVCS Core)
 
-**Pattern:** Composite Primary Key `(id, valid_from)` for version tables  
+**Pattern:** Bitemporal Single-Table with PostgreSQL `TSTZRANGE`  
 **Immutability:** Append-only, updates create new versions  
+**ADR:** [ADR-005: Bitemporal Versioning](decisions/ADR-005-bitemporal-versioning.md)
 
-**Two Versioning Types:**
-1. **Non-Branching** (User, Department): Simple history tracking.
-2. **Branch-Enabled** (Project, WBE, CostElement): Supports change order isolation and branching.
+**Key Features:**
+
+- **Bitemporal:** Track valid time (business) and transaction time (system)
+- **Branching:** All entities support branch isolation for change orders
+- **Soft Delete:** Reversible deletion with `deleted_at` timestamp
+- **Version Chain:** DAG structure via `parent_id` for history traversal
+- **Generic Framework:** `TemporalBase`, `TemporalService[T]`, generic commands
+- **Non-Versioned:** `SimpleBase` for config/preferences (standard CRUD)
+
+**Documentation:** [EVCS Core Architecture](backend/contexts/evcs-core/architecture.md)
 
 ## Directory Structure
 
@@ -75,10 +86,11 @@ The system is partitioned into the following bounded contexts. See [01-bounded-c
 ## Key Design Decisions
 
 - **ADR-001:** FastAPI + SQLAlchemy 2.0 for async performance.
-- **ADR-002:** Composite PK versioning over separate version tables.
+- **ADR-005:** Bitemporal versioning with PostgreSQL TSTZRANGE (supersedes ADR-002).
 - **ADR-004:** Strict MyPy + 80% test coverage minimum.
-- **ADR-005:** React + Vite + Ant Design for enterprise-grade UI.
 
 **Detailed Architecture:**
-- [Backend Architecture](02-architecture/backend/contexts/)
-- [Frontend Architecture](02-architecture/frontend/contexts/)
+
+- [Backend Contexts](backend/contexts/)
+- [Frontend Contexts](frontend/contexts/)
+- [ADR Index](decisions/adr-index.md)

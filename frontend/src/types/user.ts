@@ -1,22 +1,30 @@
 // User Management Types
 
 // Status for filtering
-export type UserStatus = 'active' | 'inactive';
+export type UserStatus = "active" | "inactive";
 
 // Role definitions
-export type UserRole = 'admin' | 'project_manager' | 'department_manager' | 'viewer';
+export type UserRole =
+  | "admin"
+  | "project_manager"
+  | "department_manager"
+  | "viewer";
 
-// Base User Interface (matching backend UserPublic)
+// Base User Interface (matching backend UserPublic/UserHistory)
 export interface User {
-  id: string;
+  id: string; // Version ID (UUID)
+  user_id: string; // Root Entity ID (UUID)
   email: string;
   full_name: string;
-  is_active: boolean;
-  is_superuser: boolean;
   role: UserRole;
-  department_id?: string | null; // For Department Managers
-  created_at: string;
-  updated_at?: string;
+  department?: string | null; // Department Name/Code
+  is_active: boolean;
+  created_at?: string | null; // ISO timestamp
+  password_changed_at?: string | null; // ISO timestamp
+  preferences?: Record<string, any> | null; // User preferences JSON
+  // Temporal fields (only present in history endpoints)
+  valid_time?: [string, string | null]; // [start, end] ISO timestamps
+  transaction_time?: [string, string | null]; // [start, end] ISO timestamps
 }
 
 // User Creation Payload
@@ -25,9 +33,8 @@ export interface CreateUserPayload {
   full_name: string;
   password: string;
   role: UserRole;
-  department_id?: string | null;
+  department?: string | null;
   is_active?: boolean;
-  is_superuser?: boolean;
 }
 
 // User Update Payload
@@ -36,9 +43,8 @@ export interface UpdateUserPayload {
   full_name?: string;
   password?: string;
   role?: UserRole;
-  department_id?: string | null;
+  department?: string | null;
   is_active?: boolean;
-  is_superuser?: boolean;
 }
 
 // Filter params for Users API

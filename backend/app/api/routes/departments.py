@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies.auth import get_current_active_user
 from app.db.session import get_db
+from app.models.domain.department import Department
 from app.models.domain.user import User
 from app.models.schemas.department import (
     DepartmentCreate,
@@ -25,54 +26,55 @@ def get_department_service(
 
 def check_admin(current_user: User) -> None:
     """Helper to check admin privileges."""
-    latest_version = current_user.versions[0]
-    if latest_version.role != "admin":
+    if current_user.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="The user doesn't have enough privileges",
         )
 
 
-@router.get("", response_model=list[DepartmentPublic])
+@router.get("", response_model=list[DepartmentPublic], operation_id="get_departments")
 async def read_departments(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=100),
     current_user: User = Depends(get_current_active_user),
     service: DepartmentService = Depends(get_department_service),
-) -> Sequence[DepartmentPublic]:
+) -> Sequence[Department]:
     """Retrieve departments."""
-    departments = await service.get_departments(skip=skip, limit=limit)
-    return [DepartmentPublic.from_entity(d) for d in departments]
+    return await service.get_departments(skip=skip, limit=limit)
 
-
-@router.post("", response_model=DepartmentPublic, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=DepartmentPublic,
+    status_code=status.HTTP_201_CREATED,
+    operation_id="create_department",
+)
 async def create_department(
     dept_in: DepartmentCreate,
     current_user: User = Depends(get_current_active_user),
     service: DepartmentService = Depends(get_department_service),
-) -> DepartmentPublic:
+) -> Department:
     """Create a new department. Admin only."""
     check_admin(current_user)
 
     try:
         dept = await service.create_department(
-            dept_data=dept_in, actor_id=current_user.id
+            dept_in=dept_in, actor_id=current_user.id
         )
+        return dept
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
         ) from e
 
-    return DepartmentPublic.from_entity(dept)
 
-
-@router.get("/{department_id}", response_model=DepartmentPublic)
+@router.get("/{department_id}", response_model=DepartmentPublic, operation_id="get_department")
 async def read_department(
     department_id: UUID,
     current_user: User = Depends(get_current_active_user),
     service: DepartmentService = Depends(get_department_service),
-) -> DepartmentPublic:
+) -> Department:
     """Get a specific department by id."""
     dept = await service.get_department(department_id)
     if not dept:
@@ -80,34 +82,31 @@ async def read_department(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Department not found",
         )
-    return DepartmentPublic.from_entity(dept)
+    return dept
 
 
-@router.put("/{department_id}", response_model=DepartmentPublic)
+@router.put("/{department_id}", response_model=DepartmentPublic, operation_id="update_department")
 async def update_department(
     department_id: UUID,
     dept_in: DepartmentUpdate,
     current_user: User = Depends(get_current_active_user),
     service: DepartmentService = Depends(get_department_service),
-) -> DepartmentPublic:
+) -> Department:
     """Update a department. Admin only."""
     check_admin(current_user)
 
     try:
-        await service.update_department(
-            department_id=department_id, update_data=dept_in, actor_id=current_user.id
+        updated_dept = await service.update_department(
+            department_id=department_id,
+            dept_in=dept_in,
+            actor_id=current_user.id,
         )
+        return updated_dept
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
 
-    dept = await service.get_department(department_id)
-    if not dept:
-        raise HTTPException(status_code=404, detail="Department not found")
 
-    return DepartmentPublic.from_entity(dept)
-
-
-@router.delete("/{department_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{department_id}", status_code=status.HTTP_204_NO_CONTENT, operation_id="delete_department")
 async def delete_department(
     department_id: UUID,
     current_user: User = Depends(get_current_active_user),

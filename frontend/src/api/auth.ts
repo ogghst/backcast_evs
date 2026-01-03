@@ -1,37 +1,31 @@
-import { apiClient } from "./client";
+import { AuthenticationService, Body_login } from "@/api/generated";
 import type { Token, UserLogin, UserPublic } from "@/types/auth";
 
 /**
  * Login user with email and password
- * Backend expects OAuth2PasswordRequestForm (username + password)
+ * Uses generated AuthenticationService
  */
-export const loginUser = async (
-  credentials: UserLogin
-): Promise<Token> => {
-  // OAuth2 expects form data with 'username' field (not 'email')
-  const formData = new URLSearchParams();
-  formData.append("username", credentials.email);
-  formData.append("password", credentials.password);
+export const loginUser = async (credentials: UserLogin): Promise<Token> => {
+  const formData: Body_login = {
+    username: credentials.email,
+    password: credentials.password,
+    grant_type: "password",
+  };
 
-  const response = await apiClient.post<Token>("/auth/login", formData, {
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-  });
-
-  return response.data;
+  return await AuthenticationService.login(formData);
 };
 
 /**
  * Get current authenticated user
  */
 export const getCurrentUser = async (): Promise<UserPublic> => {
-  const response = await apiClient.get<UserPublic>("/auth/me");
-  return response.data;
+  const user = await AuthenticationService.getCurrentUser();
+  // Cast or map if necessary. UserRead should be compatible with UserPublic
+  return user as unknown as UserPublic;
 };
 
 /**
- * Register a new user (future implementation)
+ * Register a new user
  */
 export const registerUser = async (userData: {
   email: string;
@@ -40,6 +34,20 @@ export const registerUser = async (userData: {
   department?: string;
   role?: string;
 }): Promise<UserPublic> => {
-  const response = await apiClient.post<UserPublic>("/auth/register", userData);
-  return response.data;
+  // Map simple object to UserRegister expected by generated client
+  const registerData = {
+    email: userData.email,
+    password: userData.password,
+    full_name: userData.full_name,
+    department: userData.department,
+    role: userData.role,
+  };
+
+  const user = await AuthenticationService.register({
+    ...registerData,
+    is_active: true,
+    is_superuser: false,
+    role: userData.role as string,
+  });
+  return user as unknown as UserPublic;
 };

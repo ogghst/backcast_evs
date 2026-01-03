@@ -1,76 +1,161 @@
-import { useEffect, useState } from 'react';
-import { Button, Space, Tag, App } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
-import { useUserStore } from '@/stores/useUserStore';
-import { DataTable } from '@/components/DataTable';
-import { User, UserRole, CreateUserPayload } from '@/types/user';
-import { UserModal } from './UserModal';
+import { App, Button, Space, Tag } from "antd";
+import {
+  DeleteOutlined,
+  EditOutlined,
+  PlusOutlined,
+  HistoryOutlined,
+} from "@ant-design/icons";
+import { useState } from "react";
+import { CreateUserPayload, UpdateUserPayload, User } from "@/types/user";
+import { UserModal } from "./UserModal";
+import type { ColumnType } from "antd/es/table";
+import { StandardTable } from "@/components/common/StandardTable";
+import { useTableParams } from "@/hooks/useTableParams";
+import { createResourceHooks } from "@/hooks/useCrud";
+import { UserService } from "../api/userService";
+import { UsersService } from "@/api/generated";
+import { VersionHistoryDrawer } from "@/components/common/VersionHistory";
+import { useEntityHistory } from "@/hooks/useEntityHistory";
+
+// Create hooks instance
+// We use the generated service directly, but mapping parameters might be needed if signatures differ.
+// Implementation Plan said: "Reduces api/userService.ts ... to near-zero lines"
+// So we should ideally pass UsersService methods directly if they match.
+// UsersService.getUsers(skip, limit) -> hook expects (filters) => Promise<T[]>
+// We need a small adapter here or in the hook factory usage.
+
+const userApi = {
+  getUsers: async (params?: {
+    pagination?: { current?: number; pageSize?: number };
+  }) => {
+    // Adapt filters/pagination to backend skip/limit
+    // params comes from tableParams (pagination.current, pageSize)
+    const current = params?.pagination?.current || 1;
+    const pageSize = params?.pagination?.pageSize || 10;
+    const skip = (current - 1) * pageSize;
+    // Search/Filters support can be added here
+    const res = await UsersService.getUsers(skip, pageSize);
+    // Handle paginated response wrapper
+    // Backend returns { items: [], total: ... } or similar?
+    // UserService.ts (old) said: "if (response && ... 'items' in response)"
+    return Array.isArray(res) ? res : (res as { items: User[] }).items;
+  },
+  getUser: (id: string) => UsersService.getUser(id) as Promise<User>,
+  createUser: (data: CreateUserPayload) =>
+    UsersService.createUser(data) as Promise<User>,
+  updateUser: (id: string, data: UpdateUserPayload) =>
+    UsersService.updateUser(id, data) as Promise<User>,
+  deleteUser: (id: string) => UsersService.deleteUser(id),
+};
+
+const { useList, useCreate, useUpdate, useDelete } = createResourceHooks<
+  User,
+  CreateUserPayload,
+  UpdateUserPayload
+>("users", userApi);
 
 export const UserList = () => {
-  const { users, loading, fetchUsers, deleteUser } = useUserStore();
+  const { tableParams, handleTableChange } = useTableParams();
+  const { data: users, isLoading, refetch } = useList(tableParams);
+
   const [modalOpen, setModalOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const { message, modal } = App.useApp();
 
-  useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
+  // Fetch version history for selected user when drawer opens
+  const { data: historyVersions, isLoading: historyLoading } = useEntityHistory(
+    {
+      resource: "users",
+      entityId: selectedUser?.user_id,
+      fetchFn: UserService.getUserHistory,
+      enabled: historyOpen,
+    }
+  );
 
-  const handleDelete = async (id: string) => {
+  const { mutateAsync: createUser } = useCreate({
+    onSuccess: () => {
+      refetch();
+      setModalOpen(false);
+    },
+  });
+  const { mutateAsync: updateUser } = useUpdate({
+    onSuccess: () => {
+      refetch();
+      setModalOpen(false);
+      // Invalidate history cache for updated user (handled by React Query)
+    },
+  });
+  const { mutate: deleteUser } = useDelete({ onSuccess: () => refetch() });
+
+  const { modal } = App.useApp();
+
+  const handleDelete = (id: string) => {
     modal.confirm({
-      title: 'Are you sure you want to delete this user?',
-      content: 'This action cannot be undone.',
-      okText: 'Yes, Delete',
-      okType: 'danger',
-      onOk: async () => {
-        await deleteUser(id);
-        message.success('User deleted successfully');
-      },
+      title: "Are you sure you want to delete this user?",
+      content: "This action cannot be undone.",
+      okText: "Yes, Delete",
+      okType: "danger",
+      onOk: () => deleteUser(id),
     });
   };
 
-  const columns = [
+  const columns: ColumnType<User>[] = [
     {
-      title: 'Full Name',
-      dataIndex: 'full_name',
-      key: 'full_name',
-      sorter: (a: User, b: User) => a.full_name.localeCompare(b.full_name),
+      title: "Full Name",
+      dataIndex: "full_name",
+      key: "full_name",
+      sorter: true,
     },
     {
-      title: 'Email',
-      dataIndex: 'email',
-      key: 'email',
+      title: "Email",
+      dataIndex: "email",
+      key: "email",
     },
     {
-      title: 'Role',
-      dataIndex: 'role',
-      key: 'role',
-      render: (role: UserRole) => <Tag color="blue">{role.toUpperCase()}</Tag>,
+      title: "Role",
+      dataIndex: "role",
+      key: "role",
+      render: (role: string) => <Tag color="blue">{role.toUpperCase()}</Tag>,
     },
     {
-      title: 'Status',
-      dataIndex: 'is_active',
-      key: 'is_active',
-      render: (active: boolean) => (
-        <Tag color={active ? 'green' : 'red'}>{active ? 'Active' : 'Inactive'}</Tag>
+      title: "Department",
+      dataIndex: "department",
+      key: "department",
+    },
+    {
+      title: "Status",
+      dataIndex: "is_active",
+      key: "is_active",
+      render: (isActive: boolean) => (
+        <Tag color={isActive ? "green" : "red"}>
+          {isActive ? "Active" : "Inactive"}
+        </Tag>
       ),
     },
     {
-      title: 'Actions',
-      key: 'actions',
-      render: (_: unknown, record: User) => (
+      title: "Actions",
+      key: "actions",
+      render: (_, record) => (
         <Space>
-          <Button 
-            icon={<EditOutlined />} 
+          <Button
+            icon={<HistoryOutlined />}
+            onClick={() => {
+              setSelectedUser(record);
+              setHistoryOpen(true);
+            }}
+            title="View History"
+          />
+          <Button
+            icon={<EditOutlined />}
             onClick={() => {
               setSelectedUser(record);
               setModalOpen(true);
             }}
           />
-          <Button 
-            danger 
-            icon={<DeleteOutlined />} 
-            onClick={() => handleDelete(record.id)} 
+          <Button
+            danger
+            icon={<DeleteOutlined />}
+            onClick={() => handleDelete(record.user_id)}
           />
         </Space>
       ),
@@ -79,26 +164,36 @@ export const UserList = () => {
 
   return (
     <div>
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
-        <h2>User Management</h2>
-        <Button 
-          type="primary" 
-          icon={<PlusOutlined />} 
-          onClick={() => {
-            setSelectedUser(null);
-            setModalOpen(true);
-          }}
-        >
-          Add User
-        </Button>
-      </div>
-
-      <DataTable
+      <StandardTable<User>
+        tableParams={tableParams}
+        onChange={handleTableChange}
+        loading={isLoading}
+        dataSource={users || []}
         columns={columns}
-        dataSource={users}
-        loading={loading}
         rowKey="id"
-        storageKey="users_table"
+        toolbar={
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <div style={{ fontSize: "16px", fontWeight: "bold" }}>
+              User Management
+            </div>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => {
+                setSelectedUser(null);
+                setModalOpen(true);
+              }}
+            >
+              Add User
+            </Button>
+          </div>
+        }
       />
 
       <UserModal
@@ -106,19 +201,29 @@ export const UserList = () => {
         onCancel={() => setModalOpen(false)}
         onOk={async (values) => {
           if (selectedUser) {
-            await useUserStore.getState().updateUser(selectedUser.id, values);
-            message.success('User updated successfully');
+            await updateUser({ id: selectedUser.user_id, data: values });
           } else {
-            // Determine create payload (UserModal handles validation)
-             await useUserStore.getState().createUser(values as CreateUserPayload); 
-             // Note: values needs casting or precise type guard if strictly typed between Create/Update
-             // CreateUserPayload vs UpdateUserPayload
-             message.success('User created successfully');
+            await createUser(values as CreateUserPayload);
           }
-          setModalOpen(false);
+          // Don't close here - let mutation onSuccess handle it
         }}
-        confirmLoading={loading}
+        confirmLoading={isLoading}
         initialValues={selectedUser}
+      />
+
+      <VersionHistoryDrawer
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        versions={(historyVersions || []).map((version, idx, arr) => ({
+          id: `v${arr.length - idx}`,
+          valid_from: version.valid_time?.[0] || new Date().toISOString(),
+          transaction_time:
+            version.transaction_time?.[0] || new Date().toISOString(),
+          changed_by: "System", // TODO: Track actual actor when backend supports it
+          changes: idx === 0 ? { created: "initial" } : { updated: "changed" },
+        }))}
+        entityName={`User: ${selectedUser?.full_name || ""}`}
+        isLoading={historyLoading}
       />
     </div>
   );

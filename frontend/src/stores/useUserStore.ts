@@ -1,73 +1,111 @@
-import { create } from 'zustand';
-import { User, CreateUserPayload, UpdateUserPayload, UserFilters } from '@/types/user';
-import { UserService } from '@/features/users/api/userService';
+import { create } from "zustand";
+import { immer } from "zustand/middleware/immer";
+import {
+  User,
+  CreateUserPayload,
+  UpdateUserPayload,
+  UserFilters,
+} from "@/types/user";
+import { UserService } from "@/features/users/api/userService";
 
 interface UserState {
   users: User[];
   loading: boolean;
   error: string | null;
-  
+
   fetchUsers: (filters?: UserFilters) => Promise<void>;
   createUser: (data: CreateUserPayload) => Promise<void>;
   updateUser: (id: string, data: UpdateUserPayload) => Promise<void>;
   deleteUser: (id: string) => Promise<void>;
 }
 
-export const useUserStore = create<UserState>((set) => ({
-  users: [],
-  loading: false,
-  error: null,
+export const useUserStore = create<UserState>()(
+  immer((set) => ({
+    users: [],
+    loading: false,
+    error: null,
 
-  fetchUsers: async (filters) => {
-    set({ loading: true, error: null });
-    try {
-      const users = await UserService.getUsers(filters);
-      set({ users, loading: false });
-    } catch (err) {
-      set({ 
-        error: err instanceof Error ? err.message : 'Unknown error', 
-        loading: false,
-        users: [] 
+    fetchUsers: async (filters) => {
+      set((state) => {
+        state.loading = true;
+        state.error = null;
       });
-    }
-  },
-  
-  createUser: async (data) => {
-    set({ loading: true, error: null });
-    try {
+      try {
+        const users = await UserService.getUsers(filters);
+        set((state) => {
+          state.users = users;
+          state.loading = false;
+        });
+      } catch (err) {
+        set((state) => {
+          state.error = err instanceof Error ? err.message : "Unknown error";
+          state.loading = false;
+          state.users = [];
+        });
+      }
+    },
+
+    createUser: async (data) => {
+      set((state) => {
+        state.loading = true;
+        state.error = null;
+      });
+      try {
         const newUser = await UserService.createUser(data);
-        set((state) => ({ 
-            users: [...state.users, newUser],
-            loading: false 
-        }));
-    } catch (err) {
-         set({ error: err instanceof Error ? err.message : 'Failed to create user', loading: false });
-    }
-  },
+        set((state) => {
+          state.users.push(newUser);
+          state.loading = false;
+        });
+      } catch (err) {
+        set((state) => {
+          state.error =
+            err instanceof Error ? err.message : "Failed to create user";
+          state.loading = false;
+        });
+      }
+    },
 
-  updateUser: async (id, data) => {
-      set({ loading: true, error: null });
-       try {
+    updateUser: async (id, data) => {
+      set((state) => {
+        state.loading = true;
+        state.error = null;
+      });
+      try {
         const updatedUser = await UserService.updateUser(id, data);
-        set((state) => ({
-            users: state.users.map(u => u.id === id ? updatedUser : u),
-            loading: false
-        }));
-    } catch (err) {
-         set({ error: err instanceof Error ? err.message : 'Failed to update user', loading: false });
-    }
-  },
+        set((state) => {
+          const index = state.users.findIndex((u) => u.id === id);
+          if (index !== -1) {
+            state.users[index] = updatedUser;
+          }
+          state.loading = false;
+        });
+      } catch (err) {
+        set((state) => {
+          state.error =
+            err instanceof Error ? err.message : "Failed to update user";
+          state.loading = false;
+        });
+      }
+    },
 
-  deleteUser: async (id) => {
-       set({ loading: true, error: null });
-       try {
+    deleteUser: async (id) => {
+      set((state) => {
+        state.loading = true;
+        state.error = null;
+      });
+      try {
         await UserService.deleteUser(id);
-        set((state) => ({
-            users: state.users.filter(u => u.id !== id),
-            loading: false
-        }));
-    } catch (err) {
-         set({ error: err instanceof Error ? err.message : 'Failed to delete user', loading: false });
-    }
-  }
-}));
+        set((state) => {
+          state.users = state.users.filter((u) => u.id !== id);
+          state.loading = false;
+        });
+      } catch (err) {
+        set((state) => {
+          state.error =
+            err instanceof Error ? err.message : "Failed to delete user";
+          state.loading = false;
+        });
+      }
+    },
+  }))
+);

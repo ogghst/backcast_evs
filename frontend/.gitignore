@@ -117,3 +117,6 @@ dist
 
 # vite
 dist-ssr
+
+*storybook.log
+storybook-static

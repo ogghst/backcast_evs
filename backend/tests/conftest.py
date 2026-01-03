@@ -1,28 +1,32 @@
-"""
-Pytest configuration and shared fixtures.
+"""Pytest configuration and fixtures for tests.
 
-This module provides:
-- Database fixtures for testing
-- Test client fixtures
-- Common test utilities
+Provides database fixtures and test utilities.
 """
 
+import os
 from collections.abc import AsyncGenerator
-from typing import Any
 
 import pytest
 import pytest_asyncio
-from fastapi.testclient import TestClient
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from alembic.config import Config
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 from sqlalchemy.pool import NullPool
+
+from alembic import command
+from httpx import ASGITransport, AsyncClient
 
 from app.core.config import settings
 from app.main import app
 
-# Test database URL (use separate test database)
-TEST_DATABASE_URL = str(settings.DATABASE_URL).replace(
-    "/backcast_evs", "/backcast_evs_test"
-)
+# Test database URL
+# Replace database name with backend_evs_test
+# We assume the default URL points to the main DB
+TEST_DATABASE_URL = str(settings.DATABASE_URL).rsplit("/", 1)[0] + "/backcast_evs_test"
 
 
 @pytest.fixture(scope="session")
@@ -31,93 +35,67 @@ def anyio_backend() -> str:
     return "asyncio"
 
 
-@pytest.fixture(scope="function")
-def event_loop() -> Any:
-    """Create a new event loop for each test with proper cleanup."""
-    import asyncio
+@pytest.fixture(scope="session", autouse=True)
+def apply_migrations() -> None:
+    """Apply alembic migrations to the test database."""
+    # Override settings to point to test DB
+    original_url = settings.DATABASE_URL
+    settings.DATABASE_URL = TEST_DATABASE_URL
+    os.environ["DATABASE_URL"] = TEST_DATABASE_URL
 
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    yield loop
+    alembic_cfg = Config("alembic.ini")
 
-    # Cleanup all pending tasks
-    try:
-        pending = asyncio.all_tasks(loop)
-        for task in pending:
-            task.cancel()
-
-        # Wait for all tasks to complete cancellation
-        if pending:
-            loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
-    finally:
-        loop.close()
-
-
-@pytest_asyncio.fixture(scope="function")
-async def db_engine() -> AsyncGenerator[Any, None]:
-    """Create async engine for tests."""
-    import asyncio
-
-    engine = create_async_engine(
-        TEST_DATABASE_URL, echo=False, poolclass=NullPool, pool_pre_ping=True
-    )
-    yield engine
-    await engine.dispose()
-    # Wait for all connections to close
-    await asyncio.sleep(0.1)
-
-
-@pytest_asyncio.fixture(scope="function")
-async def db_session(db_engine: Any) -> AsyncGenerator[AsyncSession, None]:
-    """Create async database session for tests."""
-    from app.db.session import get_db
-
-    async_session_maker = async_sessionmaker(
-        db_engine, class_=AsyncSession, expire_on_commit=False
-    )
-
-    async with async_session_maker() as session:
-        # Override the get_db dependency with the test session
-        async def override_get_db() -> AsyncGenerator[AsyncSession, None]:
-            yield session
-
-        app.dependency_overrides[get_db] = override_get_db
-
-        yield session
-
-        # Cleanup
-        app.dependency_overrides.pop(get_db, None)
-        await session.rollback()
-
-
-@pytest_asyncio.fixture(scope="function", autouse=True)
-async def setup_db(db_engine: Any) -> AsyncGenerator[None, None]:
-    """Create and drop tables for each test."""
-    # Import all models so they are found
-    from app.models.domain import department, user, user_preference  # noqa: F401
-    from app.models.domain.base import Base
-
-    async with db_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    # Run migrations
+    command.upgrade(alembic_cfg, "head")
 
     yield
 
-    async with db_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
+    # Clean up (downgrade)
+    try:
+        command.downgrade(alembic_cfg, "base")
+    except Exception:
+        pass
+    finally:
+        settings.DATABASE_URL = original_url
 
 
-@pytest.fixture(scope="module")
-def client() -> TestClient:
-    """Create test client for API testing (Synchronous)."""
-    return TestClient(app)
+@pytest_asyncio.fixture(scope="session", loop_scope="session")
+async def db_engine() -> AsyncGenerator[AsyncEngine, None]:
+    """Create async engine for tests."""
+    engine = create_async_engine(
+        TEST_DATABASE_URL, echo=False, poolclass=NullPool, pool_pre_ping=True
+    )
+
+    yield engine
+
+    await engine.dispose()
 
 
 @pytest_asyncio.fixture(scope="function")
-async def async_client() -> AsyncGenerator[Any, None]:
-    """Create async client for API testing."""
-    from httpx import ASGITransport, AsyncClient
+async def db_session(db_engine: AsyncEngine) -> AsyncGenerator[AsyncSession, None]:
+    """Create async database session for tests with transaction rollback."""
+    async with db_engine.connect() as conn:
+        trans = await conn.begin()
 
+        # Bind session to the connection with the active transaction
+        async_session_maker = async_sessionmaker(
+            bind=conn,
+            class_=AsyncSession,
+            expire_on_commit=False,
+            # We must ensure that the session doesn't close the connection
+        )
+
+        async with async_session_maker() as session:
+            yield session
+
+        # Rollback the transaction after the test completes
+        await trans.rollback()
+
+
+@pytest_asyncio.fixture(scope="function")
+async def client() -> AsyncGenerator[AsyncClient, None]:
+    """Create async client for tests."""
     async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://testserver"
+        transport=ASGITransport(app=app), base_url="http://test"
     ) as ac:
         yield ac

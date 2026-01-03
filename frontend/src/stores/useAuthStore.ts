@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { immer } from "zustand/middleware/immer";
 
 interface AuthState {
   token: string | null;
@@ -10,16 +11,22 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    immer((set) => ({
       token: null,
       isAuthenticated: false,
       login: (token: string) => {
-        set({ token, isAuthenticated: true });
+        set((state) => {
+          state.token = token;
+          state.isAuthenticated = true;
+        });
       },
       logout: () => {
-        set({ token: null, isAuthenticated: false });
+        set((state) => {
+          state.token = null;
+          state.isAuthenticated = false;
+        });
       },
-    }),
+    })),
     {
       name: "auth-storage", // localStorage key
       partialize: (state) => ({ token: state.token }), // Only persist token

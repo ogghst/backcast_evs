@@ -23,11 +23,17 @@ export default function Login() {
       await login(values);
       // Redirect to intended destination after successful login
       navigate(from, { replace: true });
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Handle login errors
+      const err = error as {
+        body?: { detail?: string };
+        response?: { data?: { detail?: string } };
+        message?: string;
+      };
       const message =
-        error?.response?.data?.detail ||
-        error?.message ||
+        err?.body?.detail ||
+        err?.response?.data?.detail ||
+        err?.message ||
         "Login failed. Please check your credentials.";
       setErrorMessage(message);
     }
@@ -71,7 +77,7 @@ export default function Login() {
 
         {errorMessage && (
           <Form.Item>
-            <Alert message={errorMessage} type="error" showIcon closable />
+            <Alert title={errorMessage} type="error" showIcon closable />
           </Form.Item>
         )}
 

@@ -8,14 +8,23 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes import auth, departments, users
 from app.core.config import settings
 from app.core.logging import setup_logging
+
 # Import models to ensure they are registered with SQLAlchemy
-from app.models.domain import user_preference  # noqa: F401
+# (user_preference removed - now embedded in user table as JSON)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Configure logging on startup
     setup_logging()
+
+    # Run database seeding
+    from app.db.seeder import DataSeeder
+    from app.db.session import async_session_maker
+
+    async with async_session_maker() as session:
+        seeder = DataSeeder()
+        await seeder.seed_all(session)
 
     # Startup: could check db connection here
     yield

@@ -3,130 +3,122 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies.auth import get_current_active_user
-from app.db.session import get_db
+from app.api.dependencies.auth import get_current_active_user, get_user_service
 from app.models.domain.user import User
-from app.schemas import preference
-from app.models.schemas.user import UserPublic, UserRegister, UserUpdate
+from app.models.schemas.preference import (
+    UserPreferenceResponse,
+    UserPreferenceUpdate,
+)
+from app.models.schemas.user import UserHistory, UserPublic, UserRegister, UserUpdate
 from app.services.user import UserService
 
 router = APIRouter()
 
 
-def get_user_service(session: AsyncSession = Depends(get_db)) -> UserService:
-    return UserService(session)
-
-
-@router.get("", response_model=list[UserPublic])
+@router.get("", response_model=list[UserPublic], operation_id="get_users")
 async def read_users(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=100),
     current_user: User = Depends(get_current_active_user),
     service: UserService = Depends(get_user_service),
-) -> Sequence[UserPublic]:
+) -> Sequence[User]:
     """
     Retrieve users.
-    Only Admis can list all users.
+    Only Admins can list all users.
     """
-    # Assuming role is in the latest version (current_user.versions[0])
-    # Ideally, we should have a dependency helper for this or helpers on User object
-    latest_version = current_user.versions[0]
-    if latest_version.role != "admin":
+    if current_user.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="The user doesn't have enough privileges",
         )
 
-    # We return the User entities. Pydantic UserPublic schema's from_attributes=True
-    # + from_entity classmethod (if we use it) or basic mapping will handle conversion.
-    # UserPublic expects flat fields.
-    # Pydantic's from_attributes with SQLAlchemy works if attributes match.
-    # UserPublic has fields like 'full_name' which are NOT on User, but on UserVersion.
-    # Direct Pydantic conversion will fail if attributes are missing on the object.
-    # We verified UserPublic uses `from_entity` manually?
-    # No, ConfigDict(from_attributes=True) handles attributes.
-    # But User entity doesn't have 'full_name'.
-    # We must use the `from_entity` method or manual mapping.
-    # FastAPI response_model handles validation, but `from_attributes` only works if the object HAS those attributes.
-
-    # Solution: We need to map entities to UserPublic instances before returning.
-    users = await service.get_users(skip=skip, limit=limit)
-    return [UserPublic.from_entity(u) for u in users]
+    return await service.get_users(skip=skip, limit=limit)
 
 
-@router.post("", response_model=UserPublic, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=UserPublic,
+    status_code=status.HTTP_201_CREATED,
+    operation_id="create_user",
+)
 async def create_user(
     user_in: UserRegister,
     current_user: User = Depends(get_current_active_user),
     service: UserService = Depends(get_user_service),
-) -> UserPublic:
+) -> User:
     """
     Create a new user.
     Admin only.
     """
-    latest_version = current_user.versions[0]
-    if latest_version.role != "admin":
+    if current_user.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="The user doesn't have enough privileges",
         )
 
     try:
-        user = await service.create_user(user_data=user_in, actor_id=current_user.id)
+
+        # Pass Pydantic model directly to service
+        # Service handles hashing and dictionary conversion
+        user = await service.create_user(user_in=user_in, actor_id=current_user.id)
+        return user
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
         ) from e
 
-    # Refresh versions to ensure proper serialization
 
-    return UserPublic.from_entity(user)
-
-
-@router.get("/me/preferences", response_model=preference.UserPreferenceResponse)
+@router.get("/me/preferences", response_model=UserPreferenceResponse, operation_id="get_my_preferences")
 async def get_my_preferences(
     current_user: User = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_db),
+    service: UserService = Depends(get_user_service),
 ) -> Any:
     """
     Get current user's preferences.
     """
-    from app.services.user_preference import UserPreferenceService
-    
-    service = UserPreferenceService(session)
-    return await service.get_my_preference(current_user)
+    try:
+        prefs = await service.get_user_preferences(current_user.id)
+        return UserPreferenceResponse(**prefs) if prefs else UserPreferenceResponse()
+    except ValueError:
+        # User not found, return default
+        return UserPreferenceResponse()
 
 
-@router.put("/me/preferences", response_model=preference.UserPreferenceResponse)
+@router.put("/me/preferences", response_model=UserPreferenceResponse, operation_id="update_my_preferences")
 async def update_my_preferences(
-    pref_in: preference.UserPreferenceUpdate,
+    pref_in: UserPreferenceUpdate,
     current_user: User = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_db),
+    service: UserService = Depends(get_user_service),
 ) -> Any:
     """
     Update current user's preferences.
     """
-    from app.services.user_preference import UserPreferenceService
+    try:
+        # Use exclude_unset to only include fields that were actually provided
+        updated_prefs = await service.update_user_preferences(
+            current_user.id, pref_in.model_dump(exclude_unset=True)
+        )
+        return UserPreferenceResponse(**updated_prefs)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        ) from e
 
-    service = UserPreferenceService(session)
-    return await service.update_my_preference(current_user, pref_in.theme)
 
-
-@router.get("/{user_id}", response_model=UserPublic)
+@router.get("/{user_id}", response_model=UserPublic, operation_id="get_user")
 async def read_user(
-    user_id: UUID,
+    user_id: UUID,  # This fetches by version ID (PK)
     current_user: User = Depends(get_current_active_user),
     service: UserService = Depends(get_user_service),
-) -> UserPublic:
+) -> User:
     """
     Get a specific user by id.
     Admin can get any user. Users can only get themselves.
     """
-    latest_version = current_user.versions[0]
-    if latest_version.role != "admin" and current_user.id != user_id:
+    if current_user.role != "admin" and current_user.id != user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="The user doesn't have enough privileges",
@@ -138,53 +130,39 @@ async def read_user(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found",
         )
-    return UserPublic.from_entity(user)
+    return user
 
 
-@router.put("/{user_id}", response_model=UserPublic)
+@router.put("/{user_id}", response_model=UserPublic, operation_id="update_user")
 async def update_user(
     user_id: UUID,
     user_in: UserUpdate,
     current_user: User = Depends(get_current_active_user),
     service: UserService = Depends(get_user_service),
-) -> UserPublic:
+) -> User:
     """
     Update a user.
     Admin can update any user. Users can only update themselves.
     """
-    latest_version = current_user.versions[0]
-    if latest_version.role != "admin" and current_user.id != user_id:
+    if current_user.role != "admin" and current_user.id != user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="The user doesn't have enough privileges",
         )
 
-    await service.update_user(
-        user_id=user_id, update_data=user_in, actor_id=current_user.id
-    )
-
-    # We need to return the UserPublic representation.
-    # updated_version is a UserVersion.
-    # UserPublic expects a User object or similar structure.
-    # But UserPublic fields match UserVersion fields + email/id from head.
-    # We should re-fetch the user to get a consistent generic object,
-    # OR construct UserPublic carefully.
-
-    # Easier to return the User entity which contains everything.
-    # Wait, update_user service returns UserVersion.
-    # We should probably get the full user again to ensure structure.
-    user = await service.get_user(user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    # Refresh versions to ensure we see the update
-
-    # Refresh versions to ensure we see the update (Identity Map fix)
-    await service.session.refresh(user, attribute_names=["versions"])
-    return UserPublic.from_entity(user)
+    try:
+        updated_user = await service.update_user(
+            user_id=user_id, user_in=user_in, actor_id=current_user.id
+        )
+        return updated_user
+    except ValueError as e:  # Entity not found or version conflict
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        ) from e
 
 
-@router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT, operation_id="delete_user")
 async def delete_user(
     user_id: UUID,
     current_user: User = Depends(get_current_active_user),
@@ -194,11 +172,29 @@ async def delete_user(
     Soft delete a user.
     Admin only.
     """
-    latest_version = current_user.versions[0]
-    if latest_version.role != "admin":
+    if current_user.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="The user doesn't have enough privileges",
         )
 
     await service.delete_user(user_id=user_id, actor_id=current_user.id)
+
+
+@router.get("/{user_id}/history", response_model=list[UserHistory], operation_id="get_user_history")
+async def get_user_history(
+    user_id: UUID,
+    current_user: User = Depends(get_current_active_user),
+    service: UserService = Depends(get_user_service),
+) -> Sequence[User]:
+    """
+    Get version history for a user.
+    Admin can view any user's history. Users can only view their own.
+    """
+    if current_user.role != "admin" and current_user.user_id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="The user doesn't have enough privileges",
+        )
+
+    return await service.get_user_history(user_id)
